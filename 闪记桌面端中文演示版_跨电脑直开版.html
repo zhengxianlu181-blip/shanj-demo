@@ -53,6 +53,22 @@ body{background:#f1efe9;color:var(--text)}
 @media(max-width:760px){.app{grid-template-columns:63px minmax(0,1fr)}.content{padding:23px 18px 34px}.home-hero{grid-template-columns:1fr;padding:25px 23px}.hero-wave{margin:17px 0 0;height:146px}.hero-stamp{right:14px}.title{font-size:29px}}
 @media(max-width:480px){.app{grid-template-columns:1fr}.main{background:#f1efe9}.topbar{padding:0 13px}.content{padding:17px 12px 28px}.home-hero{padding:22px 18px;border-radius:9px}.home-hero h2{font-size:27px}.home-library{margin-top:34px}.library-labels,.library-row{grid-template-columns:29px minmax(0,1fr) 40px 57px;padding-left:0;padding-right:0}.hero-wave{height:128px}.hero-wave-note{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.home-hero,.hero-wave{animation:none}}
+.agent-hero{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:27px 30px;background:#f8f7f3;border-color:#c9c8c1;position:relative;overflow:hidden}
+.agent-hero:after{content:'听见 · 核对 · 执行';position:absolute;right:20px;bottom:12px;color:#b0aaa0;font-size:10px;letter-spacing:.16em}
+.agent-hero h2{font-size:clamp(24px,3vw,34px);letter-spacing:-.045em;margin:8px 0 7px;line-height:1.25}
+.agent-hero p{color:var(--sub);max-width:630px;line-height:1.8}
+.agent-mark{flex:none;border:1px solid #c97a67;color:#a74b3d;background:#fff8f3;padding:12px 13px;border-radius:4px;font-size:11px;line-height:1.8;text-align:center;letter-spacing:.06em}
+.agent-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:15px;margin-top:15px}
+.agent-points{display:grid;gap:0;margin-top:4px}
+.agent-points>div{display:grid;grid-template-columns:12px minmax(0,1fr);column-gap:9px;padding:13px 0;border-bottom:1px solid #e8e6e0}
+.agent-points>div:last-child{border-bottom:0;padding-bottom:0}
+.agent-point{width:9px;height:9px;border-radius:50%;margin-top:6px;grid-row:span 2;background:#245fe4;box-shadow:0 0 0 3px #e4ebf8}
+.agent-point.orange{background:#c9784e;box-shadow:0 0 0 3px #f4e7de}.agent-point.green{background:#178563;box-shadow:0 0 0 3px #e0f0e9}
+.agent-points strong{font-size:13px}.agent-points p{grid-column:2;color:var(--sub);font-size:13px;margin-top:3px;line-height:1.65}
+.agent-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.agent-actions .btn{flex:1 1 145px;justify-content:flex-start;min-height:42px}
+.assistant-box{margin-top:15px;max-width:none}.assistant-box .questions .btn{margin-bottom:4px}
+@media(max-width:760px){.agent-grid{grid-template-columns:1fr}.agent-hero{align-items:flex-start;flex-direction:column;padding:23px}.agent-mark{align-self:flex-start}.agent-hero:after{display:none}}
+@media(max-width:480px){.agent-hero{padding:19px 16px}.agent-hero h2{font-size:25px}.agent-actions .btn{flex-basis:100%}}
 </style>
 </head>
 <body>
@@ -152,7 +168,7 @@ function createWordBlob(lines) {
 }
 
 const $=(s,root=document)=>root.querySelector(s);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sec=s=>[Math.floor(s/60),Math.floor(s%60)].map(n=>String(n).padStart(2,'0')).join(':');
 const lines=[
   [0,'林晓','先同步发布安排。周五下午三点上线，首批开放给内测用户。'],
@@ -175,7 +191,7 @@ const templateTasks=[
 ];
 const keys=['闪记中文演示版2026','闪记中文演示版设置','闪记中文演示版处理任务'];
 function load(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
-function persist(){try{localStorage.setItem(keys[0],JSON.stringify(notes));localStorage.setItem(keys[1],JSON.stringify(prefs));localStorage.setItem(keys[2],JSON.stringify(job))}catch{} }
+function persist(){try{localStorage.setItem(keys[0],JSON.stringify(notes));localStorage.setItem(keys[1],JSON.stringify(prefs));localStorage.setItem(keys[2],JSON.stringify(job))}catch{}}
 function makeNote(id,source,title,marks=[],created=Date.now()){
   return {id,source,title,marks,created,lines:structuredClone(lines),summaries:structuredClone(summaries),tasks:structuredClone(templateTasks),aiNotes,insight,
     decisions:['周五下午三点上线，首批开放给内测用户','上线前由三位负责人共同核对发布清单'],
@@ -230,6 +246,12 @@ function homeView(){
     '<section class="hero hero-dark home-hero"><div class="hero-copy"><span class="hero-kicker"><span></span> 演示模式 · 本地预设数据</span><h2>让声音留下证据，让决定有去处</h2><p>会中看见字幕，会后沿着时间点核对原文，再把共识交给待办。</p><p class="trust-promise">每个结论都能回到原文时间点。</p><div class="hero-actions">'+btn(record?'返回录音':'开始录音','record','mic','btn-primary')+btn('打开演示样例','sample','play-circle','hero-secondary')+'</div><div class="hero-demo-note"><span>不接真实麦克风</span><span>不调用外部智能服务</span><span>不生成公开链接</span></div></div><div class="hero-wave" aria-hidden="true"><span class="hero-stamp">本地演示</span><div class="wave-grid"></div><div class="bars">'+waveform()+'</div><div class="wave-caption"><span>00:00</span><span>00:12</span><span>00:24</span></div><div class="hero-wave-note">声纹 · 会议原文 · 可回溯</div></div></section>'+ 
     '<section class="library home-library"><div class="library-top"><div><h2>最近笔记</h2><span class="subtle">'+notes.length+' 条记录 · 按时间更新</span></div><div class="library-actions"><label class="searchbox">'+ico('search')+'<input id="noteSearch" placeholder="搜索笔记标题" aria-label="搜索笔记标题" value="'+esc(search)+'"></label><select id="sourceFilter" aria-label="笔记来源">'+sourceOpts.map((x,i)=>'<option value="'+(i?x:'all')+'" '+((i?x:'all')===filter?'selected':'')+'>'+x+'</option>').join('')+'</select></div></div><div class="library-list"><div class="library-labels"><span>名称</span><span>时长</span><span>状态</span></div><div id="libraryBody">'+listContent()+'</div></div></section>';
 }
+function askLeave(p){openDialog('离开录音？','<p class="dialog-sub">可以继续录音，或结束本次演示录音并整理笔记。</p>','<button type="button" class="btn btn-light" data-act="close">继续录音</button>'+btn('结束并整理','end','', 'btn-primary'))}
+function start(){
+  if(job&&!job.finished){toast('上一段录音正在整理');navigate('processing');return}
+  if(record){navigate('record');return}
+  openRecordCheck();
+}
 function openRecordCheck(){
   openDialog('录音前检查','<p class="dialog-sub">开始前确认演示音源、语言和处理方式。本演示版不接入真实麦克风。</p><div class="preflight-grid"><div class="preflight-row"><span class="preflight-dot"></span><div><strong>麦克风</strong><small>'+(prefs.device?'模拟录音卡 · 已连接 · 电平正常':'模拟无设备 · 仍可体验预设中文字幕')+'</small></div><span class="state-chip">'+(prefs.device?'模拟就绪':'演示可用')+'</span></div><div class="preflight-row"><span class="preflight-dot"></span><div><strong>系统声音</strong><small>模拟桌面音源 · 使用预设会议内容</small></div><span class="state-chip">演示可用</span></div><div class="preflight-row"><span class="preflight-dot"></span><div><strong>转写语言</strong><small>简体中文 · 预设会议内容</small></div><span class="state-chip">中文</span></div></div><p class="small-note">演示数据将在停止后生成会议纪要、原文和待办，不会上传或生成公开链接。</p>',btn('取消','close')+btn('完成检查，开始录音','confirm-record','mic','btn-primary'));
 }
@@ -256,7 +278,7 @@ function updateRecord(){
     const visible=lines.filter(([at])=>at<=t).map((line,i,a)=>i===a.length-1?[line[0],line[1],snapshot.text]:line);
     const live=$('#liveLines'),key=JSON.stringify(visible);
     if(live.dataset.key!==key){live.innerHTML=visible.map(([at,who,text])=>'<div class="transcript-line '+(at===snapshot.at?'selected-line':'')+'"><span class="timestamp">'+sec(at)+'</span><span class="speaker">'+esc(who)+'</span><span class="line-text">'+esc(text)+'</span></div>').join('');live.dataset.key=key;live.scrollTop=live.scrollHeight}
-    $('#recordCaption').innerHTML=prefs.caption.enabled?captionMarkup(snapshot,'record'):'<p class="caption-hidden">字幕已隐藏，录音和中文转写继续。可点击「显示字幕」恢复。</p>';
+    $('#recordCaption').innerHTML=prefs.caption.enabled?captionMarkup(snapshot,'record'): '<p class="caption-hidden">字幕已隐藏，录音和中文转写继续。可点击「显示字幕」恢复。</p>';
     const marks=JSON.stringify(record.marks);if($('#liveMarks').dataset.key!==marks){$('#liveMarks').dataset.key=marks;$('#liveMarks').innerHTML=record.marks.map((m,i)=>'<div class="mark-item">'+ico('flag')+'<strong>'+sec(m.at)+'</strong><span>'+esc(m.label)+'</span><button data-act="edit-mark" data-i="'+i+'">编辑备注</button></div>').join('')}
     const paused=record.paused||t>=24,mode=record.sound||'normal';
     const mic=paused||mode==='off'?0:mode==='low'?6:Math.round(38+Math.sin(t*3)*22),sys=paused?0:Math.round(46+Math.sin(t*2.2)*25);
@@ -267,6 +289,7 @@ function updateRecord(){
   updateDock(snapshot);
 }
 setInterval(updateRecord,240);
+// Live and playback captions use the same timeline; the live clock also drives the dock.
 function captionSnapshot(seq,t,live=false){
   const index=Math.max(0,seq.findLastIndex(l=>l[0]<=t)),line=seq[index],next=seq[index+1]?.[0]??24;
   const count=live?Math.max(1,Math.ceil((t-line[0])/(Math.max(1,next-line[0])*.82)*line[2].length)):line[2].length;
@@ -302,7 +325,7 @@ function captionSettings(){
 }
 function previewCaptionSettings(){
   const area=$('#captionSettingsPreview');if(!area)return;
-  area.innerHTML='<div class="caption-box '+($('#captionTheme').value==='light'?'light ':'')+'" data-size="'+$('#captionSize').value+'"><div class="caption-meta">效果预览'+($('#captionSpeaker').checked?' · 林晓':'')+'</div><p class="caption-current">周五下午上线，首批开放给内测用户。</p></div>';
+  area.innerHTML='<div class="caption-box '+($('#captionTheme').value==='light'?'light':'')+'" data-size="'+$('#captionSize').value+'"><div class="caption-meta">效果预览'+($('#captionSpeaker').checked?' · 林晓':'')+'</div><p class="caption-current">周五下午上线，首批开放给内测用户。</p></div>';
 }
 function soundSettings(){
   openDialog('音源状态演示','<p class="dialog-sub">选择一种模拟音源状态，观察电平、中文提示和字幕的变化。</p><div class="settings-grid"><label>麦克风状态<select id="soundMode"><option value="normal">正常收音</option><option value="low">低音量</option><option value="off">设备未连接</option></select></label></div><p class="small-note">只更改本地演示状态，不会读取或申请麦克风权限。</p>',btn('取消','close')+btn('应用演示状态','save-sound','check','btn-primary'));
@@ -434,8 +457,11 @@ function todoView(){
   '<section class="card todo-list">'+(visible.length?visible.map(({n,t,i})=>'<div class="action-row"><label class="task-check"><input type="checkbox" data-toggle-task data-id="'+esc(n.id)+'" data-i="'+i+'" '+(t.done?'checked':'')+'><span class="'+(t.done?'completed':'')+'"><strong>'+esc(t.text)+'</strong><small>'+esc(t.who)+' · '+esc(t.due)+' · 来源 '+sec(t.time)+'</small></span></label>'+btn('查看来源','task-source','link','btn-light','data-id="'+esc(n.id)+'" data-time="'+t.time+'"')+(t.done?'<span class="state-chip">已完成 · 可回到来源复核</span>':'<span class="state-chip pending">已加入待办</span>')+'</div>').join(''):'<div class="empty"><h2>这里还没有待办</h2><p>本机还没有已确认的行动项。打开演示样例，在「待办事项」中添加一项任务。</p>'+btn('打开演示样例','sample-actions','chevron-right','btn-primary')+'</div>')+'</section>';
 }
 function assistantView(){
-  return pageTop('基于笔记','智能助手','用预设问题体验如何从笔记查找结论。')+
-  '<section class="detail-box card assistant-box"><div class="section-top"><h2>试着问一个问题</h2><span class="badge">示例回答</span></div><div class="questions">'+[['0','这场会议有哪些关键决定？'],['12','谁负责回归测试？'],['6','发布页文案什么时候定稿？']].map(([t,q])=>btn(q,'ask','sparkles','btn-light','data-time="'+t+'"')).join('')+'</div><div id="answer" class="answer" hidden></div></section>';
+  return pageTop('从记录到执行','智能洞察','让一段会议记录继续变成简报、分发和下一步安排。',btn('打开演示样例','sample','play-circle','btn-primary'))+
+  '<section class="agent-hero card"><div><span class="eyebrow">闪记 AI Agent · 演示模式</span><h2>从一段录音，继续完成工作</h2><p>基于《秋季新品发布会筹备会》的纪要、原文和待办，体验下一步工作如何被整理出来。</p></div><span class="agent-mark">本地预设<br>不连接外部应用</span></section>'+ 
+  '<div class="agent-grid"><section class="detail-box card"><div class="section-top"><div><h2>实时要点</h2><p class="small-note">结论、风险和待办都能回到原文时间点。</p></div><span class="badge">4 条原文证据</span></div><div class="agent-points"><div><span class="agent-point blue"></span><strong>关键决定</strong><p>周五下午三点上线，首批开放给内测用户。</p></div><div><span class="agent-point orange"></span><strong>风险提示</strong><p>登录和上传回归测试需要在周四下午完成。</p></div><div><span class="agent-point green"></span><strong>下一步</strong><p>陈哲、周宁、林晓分别确认文案、测试和反馈。</p></div></div></section><section class="detail-box card"><div class="section-top"><div><h2>继续工作</h2><p class="small-note">选择一个动作，查看本地演示结果。</p></div><span class="state-chip">演示入口</span></div><div class="agent-actions">'+[['brief','生成项目简报','file-text'],['share','分发给负责人','share-2'],['schedule','安排跟进会议','clock'],['weekly','设置周期汇总','radio']].map(([k,l,i])=>btn(l,'agent-action',i,'btn-light','data-kind="'+k+'"')).join('')+'</div></section></div>'+ 
+  '<div class="agent-grid"><section class="detail-box card"><div class="section-top"><h2>关联记忆</h2><span class="badge">演示生成</span></div><p class="prose">林晓、陈哲、周宁 · 秋季新品 · 发布页 · 登录和上传测试</p><p class="evidence-note">可继续追问：这个项目上次讨论了什么？哪些任务还没完成？</p>'+btn('查看关联原文','tab','link','btn-light','data-tab="raw"')+'</section><section class="detail-box card"><div class="section-top"><h2>连接器与日程</h2><span class="badge">本地模拟</span></div><p class="prose">飞书、钉钉、企业微信和日历均为演示入口，不会真实发送或创建日程。</p><div class="agent-actions">'+btn('模拟同步到负责人','agent-action','share-2','btn-light','data-kind="connector"')+btn('准备下一次会议','agent-action','clock','btn-light','data-kind="calendar"')+'</div></section></div>'+ 
+  '<section class="detail-box card assistant-box"><div class="section-top"><h2>试着问一个问题</h2><span class="badge">基于本地原文</span></div><div class="questions">'+[['0','这场会议有哪些关键决定？'],['12','谁负责回归测试？'],['6','发布页文案什么时候定稿？']].map(([t,q])=>btn(q,'ask','sparkles','btn-light','data-time="'+t+'"')).join('')+'</div><div id="answer" class="answer" hidden></div></section>';
 }
 function mineView(){
   return pageTop('账户与设备','我的','查看演示设备和转写设置。')+
@@ -521,7 +547,7 @@ document.addEventListener('click',e=>{
     case 'open':detail(id);break;
     case 'sample':detail('sample');break;
     case 'sample-actions':detail('sample','actions');break;
-    case 'record':openRecordCheck();break;
+    case 'record':start();break;
     case 'clear-filter':search='';filter='all';if($('#noteSearch'))$('#noteSearch').value='';if($('#sourceFilter'))$('#sourceFilter').value='all';if($('#libraryBody'))$('#libraryBody').innerHTML=listContent();toast('已清除搜索和来源筛选');break;
     case 'confirm-record':beginRecord();break;
     case 'pause': if(record){if(!record.paused)record.t=recordTime();else record.start=Date.now();record.paused=!record.paused;updateRecord();toast(record.paused?'录音、计时与字幕已暂停':'录音、计时与字幕已恢复')}break;
@@ -579,6 +605,11 @@ document.addEventListener('click',e=>{
       const sample=notes.find(x=>x.id==='sample')||n, hit=sample.summaries.find(x=>x[0]===+time), a=$('#answer');
       a.hidden=false;a.innerHTML='<strong>根据《'+esc(sample.title)+'》</strong><p>'+esc(hit[2])+'</p>'+btn('查看原文 · '+sec(+time),'task-source','link','btn-light','data-id="'+esc(sample.id)+'" data-time="'+time+'"');break;
     }
+    case 'agent-action':{
+      const messages={brief:'已生成项目简报预览，内容来自本地会议原文',share:'已模拟分发给负责人，未真实发送消息',schedule:'已准备跟进会议，未真实创建日程',weekly:'已设置周期汇总演示，未连接外部应用',connector:'已模拟同步到负责人，未真实连接飞书、钉钉或企业微信',calendar:'已准备下一次会议，未真实创建日历事件'};
+      toast(messages[b.dataset.kind]||'演示动作已完成');
+      break;
+    }
     case 'device':prefs.device=!prefs.device;persist();render();break;
     case 'dictionary':openDialog('个人词典','<label class="preview-label">用逗号或换行分隔词语<textarea id="dictValue" rows="5" maxlength="5000">'+esc(prefs.dictionary)+'</textarea></label><p class="small-note">演示词典保存在本机，预设转写不会改变。</p>',btn('取消','close')+btn('保存词典','save-dict','check','btn-primary'));break;
     case 'password':passwordDialog();break;
@@ -623,6 +654,9 @@ window.addEventListener('resize',()=>{dockXY=null;if(dockOpen)renderDock()});
 document.addEventListener('wheel',e=>{if(page==='detail'&&playback&&e.target.closest('#detailContent')&&followPlay){followPlay=false;const b=$('#followToggle');if(b){b.textContent='恢复自动跟随';b.setAttribute('aria-pressed','false')}}},{passive:true});
 restoreProcess();
 render();
+
+
 </script>
 </body>
 </html>
+

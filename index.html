@@ -53,6 +53,22 @@ body{background:#f1efe9;color:var(--text)}
 @media(max-width:760px){.app{grid-template-columns:63px minmax(0,1fr)}.content{padding:23px 18px 34px}.home-hero{grid-template-columns:1fr;padding:25px 23px}.hero-wave{margin:17px 0 0;height:146px}.hero-stamp{right:14px}.title{font-size:29px}}
 @media(max-width:480px){.app{grid-template-columns:1fr}.main{background:#f1efe9}.topbar{padding:0 13px}.content{padding:17px 12px 28px}.home-hero{padding:22px 18px;border-radius:9px}.home-hero h2{font-size:27px}.home-library{margin-top:34px}.library-labels,.library-row{grid-template-columns:29px minmax(0,1fr) 40px 57px;padding-left:0;padding-right:0}.hero-wave{height:128px}.hero-wave-note{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.home-hero,.hero-wave{animation:none}}
+.agent-hero{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:27px 30px;background:#f8f7f3;border-color:#c9c8c1;position:relative;overflow:hidden}
+.agent-hero:after{content:'听见 · 核对 · 执行';position:absolute;right:20px;bottom:12px;color:#b0aaa0;font-size:10px;letter-spacing:.16em}
+.agent-hero h2{font-size:clamp(24px,3vw,34px);letter-spacing:-.045em;margin:8px 0 7px;line-height:1.25}
+.agent-hero p{color:var(--sub);max-width:630px;line-height:1.8}
+.agent-mark{flex:none;border:1px solid #c97a67;color:#a74b3d;background:#fff8f3;padding:12px 13px;border-radius:4px;font-size:11px;line-height:1.8;text-align:center;letter-spacing:.06em}
+.agent-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:15px;margin-top:15px}
+.agent-points{display:grid;gap:0;margin-top:4px}
+.agent-points>div{display:grid;grid-template-columns:12px minmax(0,1fr);column-gap:9px;padding:13px 0;border-bottom:1px solid #e8e6e0}
+.agent-points>div:last-child{border-bottom:0;padding-bottom:0}
+.agent-point{width:9px;height:9px;border-radius:50%;margin-top:6px;grid-row:span 2;background:#245fe4;box-shadow:0 0 0 3px #e4ebf8}
+.agent-point.orange{background:#c9784e;box-shadow:0 0 0 3px #f4e7de}.agent-point.green{background:#178563;box-shadow:0 0 0 3px #e0f0e9}
+.agent-points strong{font-size:13px}.agent-points p{grid-column:2;color:var(--sub);font-size:13px;margin-top:3px;line-height:1.65}
+.agent-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.agent-actions .btn{flex:1 1 145px;justify-content:flex-start;min-height:42px}
+.assistant-box{margin-top:15px;max-width:none}.assistant-box .questions .btn{margin-bottom:4px}
+@media(max-width:760px){.agent-grid{grid-template-columns:1fr}.agent-hero{align-items:flex-start;flex-direction:column;padding:23px}.agent-mark{align-self:flex-start}.agent-hero:after{display:none}}
+@media(max-width:480px){.agent-hero{padding:19px 16px}.agent-hero h2{font-size:25px}.agent-actions .btn{flex-basis:100%}}
 </style>
 </head>
 <body>
@@ -441,8 +457,11 @@ function todoView(){
   '<section class="card todo-list">'+(visible.length?visible.map(({n,t,i})=>'<div class="action-row"><label class="task-check"><input type="checkbox" data-toggle-task data-id="'+esc(n.id)+'" data-i="'+i+'" '+(t.done?'checked':'')+'><span class="'+(t.done?'completed':'')+'"><strong>'+esc(t.text)+'</strong><small>'+esc(t.who)+' · '+esc(t.due)+' · 来源 '+sec(t.time)+'</small></span></label>'+btn('查看来源','task-source','link','btn-light','data-id="'+esc(n.id)+'" data-time="'+t.time+'"')+(t.done?'<span class="state-chip">已完成 · 可回到来源复核</span>':'<span class="state-chip pending">已加入待办</span>')+'</div>').join(''):'<div class="empty"><h2>这里还没有待办</h2><p>本机还没有已确认的行动项。打开演示样例，在「待办事项」中添加一项任务。</p>'+btn('打开演示样例','sample-actions','chevron-right','btn-primary')+'</div>')+'</section>';
 }
 function assistantView(){
-  return pageTop('基于笔记','智能助手','用预设问题体验如何从笔记查找结论。')+
-  '<section class="detail-box card assistant-box"><div class="section-top"><h2>试着问一个问题</h2><span class="badge">示例回答</span></div><div class="questions">'+[['0','这场会议有哪些关键决定？'],['12','谁负责回归测试？'],['6','发布页文案什么时候定稿？']].map(([t,q])=>btn(q,'ask','sparkles','btn-light','data-time="'+t+'"')).join('')+'</div><div id="answer" class="answer" hidden></div></section>';
+  return pageTop('从记录到执行','智能洞察','让一段会议记录继续变成简报、分发和下一步安排。',btn('打开演示样例','sample','play-circle','btn-primary'))+
+  '<section class="agent-hero card"><div><span class="eyebrow">闪记 AI Agent · 演示模式</span><h2>从一段录音，继续完成工作</h2><p>基于《秋季新品发布会筹备会》的纪要、原文和待办，体验下一步工作如何被整理出来。</p></div><span class="agent-mark">本地预设<br>不连接外部应用</span></section>'+ 
+  '<div class="agent-grid"><section class="detail-box card"><div class="section-top"><div><h2>实时要点</h2><p class="small-note">结论、风险和待办都能回到原文时间点。</p></div><span class="badge">4 条原文证据</span></div><div class="agent-points"><div><span class="agent-point blue"></span><strong>关键决定</strong><p>周五下午三点上线，首批开放给内测用户。</p></div><div><span class="agent-point orange"></span><strong>风险提示</strong><p>登录和上传回归测试需要在周四下午完成。</p></div><div><span class="agent-point green"></span><strong>下一步</strong><p>陈哲、周宁、林晓分别确认文案、测试和反馈。</p></div></div></section><section class="detail-box card"><div class="section-top"><div><h2>继续工作</h2><p class="small-note">选择一个动作，查看本地演示结果。</p></div><span class="state-chip">演示入口</span></div><div class="agent-actions">'+[['brief','生成项目简报','file-text'],['share','分发给负责人','share-2'],['schedule','安排跟进会议','clock'],['weekly','设置周期汇总','radio']].map(([k,l,i])=>btn(l,'agent-action',i,'btn-light','data-kind="'+k+'"')).join('')+'</div></section></div>'+ 
+  '<div class="agent-grid"><section class="detail-box card"><div class="section-top"><h2>关联记忆</h2><span class="badge">演示生成</span></div><p class="prose">林晓、陈哲、周宁 · 秋季新品 · 发布页 · 登录和上传测试</p><p class="evidence-note">可继续追问：这个项目上次讨论了什么？哪些任务还没完成？</p>'+btn('查看关联原文','tab','link','btn-light','data-tab="raw"')+'</section><section class="detail-box card"><div class="section-top"><h2>连接器与日程</h2><span class="badge">本地模拟</span></div><p class="prose">飞书、钉钉、企业微信和日历均为演示入口，不会真实发送或创建日程。</p><div class="agent-actions">'+btn('模拟同步到负责人','agent-action','share-2','btn-light','data-kind="connector"')+btn('准备下一次会议','agent-action','clock','btn-light','data-kind="calendar"')+'</div></section></div>'+ 
+  '<section class="detail-box card assistant-box"><div class="section-top"><h2>试着问一个问题</h2><span class="badge">基于本地原文</span></div><div class="questions">'+[['0','这场会议有哪些关键决定？'],['12','谁负责回归测试？'],['6','发布页文案什么时候定稿？']].map(([t,q])=>btn(q,'ask','sparkles','btn-light','data-time="'+t+'"')).join('')+'</div><div id="answer" class="answer" hidden></div></section>';
 }
 function mineView(){
   return pageTop('账户与设备','我的','查看演示设备和转写设置。')+
@@ -585,6 +604,11 @@ document.addEventListener('click',e=>{
     case 'ask':{
       const sample=notes.find(x=>x.id==='sample')||n, hit=sample.summaries.find(x=>x[0]===+time), a=$('#answer');
       a.hidden=false;a.innerHTML='<strong>根据《'+esc(sample.title)+'》</strong><p>'+esc(hit[2])+'</p>'+btn('查看原文 · '+sec(+time),'task-source','link','btn-light','data-id="'+esc(sample.id)+'" data-time="'+time+'"');break;
+    }
+    case 'agent-action':{
+      const messages={brief:'已生成项目简报预览，内容来自本地会议原文',share:'已模拟分发给负责人，未真实发送消息',schedule:'已准备跟进会议，未真实创建日程',weekly:'已设置周期汇总演示，未连接外部应用',connector:'已模拟同步到负责人，未真实连接飞书、钉钉或企业微信',calendar:'已准备下一次会议，未真实创建日历事件'};
+      toast(messages[b.dataset.kind]||'演示动作已完成');
+      break;
     }
     case 'device':prefs.device=!prefs.device;persist();render();break;
     case 'dictionary':openDialog('个人词典','<label class="preview-label">用逗号或换行分隔词语<textarea id="dictValue" rows="5" maxlength="5000">'+esc(prefs.dictionary)+'</textarea></label><p class="small-note">演示词典保存在本机，预设转写不会改变。</p>',btn('取消','close')+btn('保存词典','save-dict','check','btn-primary'));break;
