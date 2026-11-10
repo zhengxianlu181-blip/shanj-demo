@@ -66,6 +66,9 @@ body{background:#f1efe9;color:var(--text)}
 .agent-point.orange{background:#c9784e;box-shadow:0 0 0 3px #f4e7de}.agent-point.green{background:#178563;box-shadow:0 0 0 3px #e0f0e9}
 .agent-points strong{font-size:13px}.agent-points p{grid-column:2;color:var(--sub);font-size:13px;margin-top:3px;line-height:1.65}
 .agent-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.agent-actions .btn{flex:1 1 145px;justify-content:flex-start;min-height:42px}
+.batch-export-summary{display:grid;gap:8px;margin:12px 0;padding:11px 12px;background:#f6f5f1;border:1px solid #e1dfd8;border-radius:6px}.batch-export-summary div{display:grid;grid-template-columns:76px minmax(0,1fr);gap:8px;font-size:12px}.batch-export-summary span{color:var(--sub)}.batch-progress{margin:14px 0 3px}.batch-progress-track{height:7px;border-radius:5px;background:#e5e9f0;overflow:hidden}.batch-progress-track span{display:block;width:0;height:100%;background:var(--blue);transition:width .35s}.batch-progress p{margin-top:7px;color:var(--blue-dark);font-size:12px}.batch-bar .btn{min-height:34px;padding:6px 10px}
+.batch-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;background:#f8f7f3;border:1px solid #d9d9d3;border-radius:7px}.batch-bar strong{margin-right:auto}.batch-count{color:var(--muted);font-size:12px}.library-row.batch-row{grid-template-columns:28px 37px minmax(130px,1fr) 78px 74px 17px}.batch-check{width:17px;height:17px;border:1px solid #bdc9da;border-radius:4px;background:#fff;display:grid;place-items:center;color:#fff}.batch-row.selected .batch-check{background:var(--blue);border-color:var(--blue)}.batch-row.selected .batch-check:after{content:'✓';font-size:12px;line-height:1}.batch-note{padding:10px 3px;color:var(--muted);font-size:12px}
+.batch-progress{display:grid;gap:12px}.batch-progress-track{height:8px;background:#e8edf4;border-radius:8px;overflow:hidden}.batch-progress-track b{display:block;height:100%;width:0;background:var(--blue);transition:width .2s}.batch-progress-meta{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
 .assistant-box{margin-top:15px;max-width:none}.assistant-box .questions .btn{margin-bottom:4px}
 @media(max-width:760px){.agent-grid{grid-template-columns:1fr}.agent-hero{align-items:flex-start;flex-direction:column;padding:23px}.agent-mark{align-self:flex-start}.agent-hero:after{display:none}}
 @media(max-width:480px){.agent-hero{padding:19px 16px}.agent-hero h2{font-size:25px}.agent-actions .btn{flex-basis:100%}}
@@ -198,9 +201,12 @@ function makeNote(id,source,title,marks=[],created=Date.now()){
     openQuestions:['登录和上传回归测试是否能在周四下午完成？','发布后反馈由谁统一汇总并回传？'],quickNotes:[],rawEdited:false};
 }
 const initial=makeNote('sample','演示样例','秋季新品发布会筹备会',[{at:0,label:'确认上线时间',kind:'decision'},{at:12,label:'回归测试',kind:'risk'}],new Date(2026,10,9,10,32).getTime());
-let notes=load(keys[0],[initial]), prefs=load(keys[1],{dictionary:'',device:true});
+let notes=load(keys[0],[initial]);
+if(!notes.some(n=>n.id==='followup'))notes.push(makeNote('followup','桌面录音','秋季新品发布会筹备会 · 上线复盘',[],new Date(2026,10,8,18,10).getTime()));
+if(!notes.some(n=>n.id==='imported'))notes.push(makeNote('imported','本地导入','秋季新品发布会筹备会 · 负责人同步',[],new Date(2026,10,7,14,26).getTime()));
+let prefs=load(keys[1],{dictionary:'',device:true});
 notes=notes.map(n=>({...n,decisions:n.decisions||structuredClone(initial.decisions),openQuestions:n.openQuestions||structuredClone(initial.openQuestions),quickNotes:Array.isArray(n.quickNotes)?n.quickNotes:[],rawEdited:!!n.rawEdited,marks:(n.marks||[]).map(m=>({...m,kind:m.kind||'focus'}))}));
-let page='home', noteId='sample', tab='minutes', filter='all', search='', record=null, job=load(keys[2],null), sourceAt=-1, position=0, rate=1, playback=null, speech=null, lastLine=-1, toastId=0, taskFilter='all', sharePick=null, followPlay=true, lastEditSnapshot=null;
+let page='home', noteId='sample', tab='minutes', filter='all', search='', record=null, job=load(keys[2],null), sourceAt=-1, position=0, rate=1, playback=null, speech=null, lastLine=-1, toastId=0, taskFilter='all', sharePick=null, followPlay=true, lastEditSnapshot=null, batchMode=false, batchSelected=[];
 prefs.caption={enabled:true,size:'medium',theme:'dark',speaker:true,placement:'bottom',...prefs.caption};
 let dockOpen=false,dockCompact=false,dockXY=null,lastFollowAt=-1,markEditIndex=-1,rawQuery='';
 const find=()=>notes.find(n=>n.id===noteId)||notes[0];
@@ -237,14 +243,15 @@ function render(){
 function listContent(){
   const ns=notes.filter(n=>(!search||n.title.includes(search))&&(filter==='all'||n.source===filter));
   const stages=['上传中（本地模拟）','中文转写中','生成纪要中','提取待办中'];
-  const items=ns.map(n=>{const activeJob=job&&job.note?.id===n.id&&!job.finished;const failed=activeJob&&job.failed;const status=failed?'整理失败 · 点击重试':activeJob?stages[job.stage]||'整理中':'本地已保存';return '<button class="library-row" '+(activeJob?'data-go="processing"':'data-act="open" data-id="'+esc(n.id)+'"')+'><span class="note-icon">'+ico(failed?'help-circle':activeJob?'clock':'file-text')+'</span><span class="note-main"><strong>'+esc(n.title)+'</strong><small>'+esc(fmtDate(n.created))+' · '+esc(n.source)+' · '+esc(status)+'</small></span><span class="row-length">00:24</span><span class="state-chip '+(activeJob?'pending':'')+'">'+(failed?'失败·重试':activeJob?(job.stage>=2?'原文可用':'整理中'):'已整理')+'</span>'+ico('chevron-right','row-arrow')+'</button>'});
+  const items=ns.map(n=>{const activeJob=job&&job.note?.id===n.id&&!job.finished;const failed=activeJob&&job.failed;const status=failed?'整理失败 · 点击重试':activeJob?stages[job.stage]||'整理中':'本地已保存';const selected=batchSelected.includes(n.id);const rowClass='library-row'+(batchMode?' batch-row':'')+(selected?' selected':'');const action=batchMode?'data-act="batch-toggle" data-id="'+esc(n.id)+'"':(activeJob?'data-go="processing"':'data-act="open" data-id="'+esc(n.id)+'"');return '<button class="'+rowClass+'" '+action+'>'+(batchMode?'<span class="batch-check" aria-hidden="true"></span>':'')+'<span class="note-icon">'+ico(failed?'help-circle':activeJob?'clock':'file-text')+'</span><span class="note-main"><strong>'+esc(n.title)+'</strong><small>'+esc(fmtDate(n.created))+' · '+esc(n.source)+' · '+esc(status)+'</small></span><span class="row-length">00:24</span><span class="state-chip '+(activeJob?'pending':'')+'">'+(failed?'失败·重试':activeJob?(job.stage>=2?'原文可用':'整理中'):'已整理')+'</span>'+ico('chevron-right','row-arrow')+'</button>'});
   return items.join('')||'<div class="empty"><h2>没有符合条件的笔记</h2><p>本机暂时没有匹配的记录，可以清除筛选后继续查看。</p>'+btn('清除搜索和筛选','clear-filter','close','btn-light')+'</div>';
 }
 function homeView(){
   const sourceOpts=['全部来源','演示样例','桌面录音','本地导入'];
+  const batchControls=batchMode?'<div class="batch-bar" role="toolbar" aria-label="批量选择工具"><strong>选择要导出的笔记</strong><span class="batch-count">已选 '+batchSelected.length+' 条</span>'+btn('全选','batch-all','check')+btn('清空选择','batch-clear','close','btn-light')+btn('批量导出','batch-export','download','btn-primary',batchSelected.length?'':'disabled')+btn('退出选择','batch-exit','close','btn-quiet')+'</div>':btn('选择笔记','batch-mode','check-square','btn-light');
   return pageTop('会议工作台','笔记','把讨论留在时间轴上，把决定落到待办里。',btn('导入音频','import','upload'))+
     '<section class="hero hero-dark home-hero"><div class="hero-copy"><span class="hero-kicker"><span></span> 演示模式 · 本地预设数据</span><h2>让声音留下证据，让决定有去处</h2><p>会中看见字幕，会后沿着时间点核对原文，再把共识交给待办。</p><p class="trust-promise">每个结论都能回到原文时间点。</p><div class="hero-actions">'+btn(record?'返回录音':'开始录音','record','mic','btn-primary')+btn('打开演示样例','sample','play-circle','hero-secondary')+'</div><div class="hero-demo-note"><span>不接真实麦克风</span><span>不调用外部智能服务</span><span>不生成公开链接</span></div></div><div class="hero-wave" aria-hidden="true"><span class="hero-stamp">本地演示</span><div class="wave-grid"></div><div class="bars">'+waveform()+'</div><div class="wave-caption"><span>00:00</span><span>00:12</span><span>00:24</span></div><div class="hero-wave-note">声纹 · 会议原文 · 可回溯</div></div></section>'+ 
-    '<section class="library home-library"><div class="library-top"><div><h2>最近笔记</h2><span class="subtle">'+notes.length+' 条记录 · 按时间更新</span></div><div class="library-actions"><label class="searchbox">'+ico('search')+'<input id="noteSearch" placeholder="搜索笔记标题" aria-label="搜索笔记标题" value="'+esc(search)+'"></label><select id="sourceFilter" aria-label="笔记来源">'+sourceOpts.map((x,i)=>'<option value="'+(i?x:'all')+'" '+((i?x:'all')===filter?'selected':'')+'>'+x+'</option>').join('')+'</select></div></div><div class="library-list"><div class="library-labels"><span>名称</span><span>时长</span><span>状态</span></div><div id="libraryBody">'+listContent()+'</div></div></section>';
+    '<section class="library home-library"><div class="library-top"><div><h2>最近笔记</h2><span class="subtle">'+notes.length+' 条记录 · 按时间更新</span></div><div class="library-actions"><label class="searchbox">'+ico('search')+'<input id="noteSearch" placeholder="搜索笔记标题" aria-label="搜索笔记标题" value="'+esc(search)+'"></label><select id="sourceFilter" aria-label="笔记来源">'+sourceOpts.map((x,i)=>'<option value="'+(i?x:'all')+'" '+((i?x:'all')===filter?'selected':'')+'>'+x+'</option>').join('')+'</select></div></div>'+batchControls+'<div class="batch-note"'+(batchMode?'':' hidden')+'>批量导出会合并每条笔记的全部文本，并附带录音文件占位；演示数据只在本机生成。</div><div class="library-list"><div class="library-labels"><span>名称</span><span>时长</span><span>状态</span></div><div id="libraryBody">'+listContent()+'</div></div></section>';
 }
 function askLeave(p){openDialog('离开录音？','<p class="dialog-sub">可以继续录音，或结束本次演示录音并整理笔记。</p>','<button type="button" class="btn btn-light" data-act="close">继续录音</button>'+btn('结束并整理','end','', 'btn-primary'))}
 function start(){
@@ -525,11 +532,60 @@ function download(){
   const blob=word?createWordBlob(ls):new Blob(['\ufeff',ls.join('\r\n')],{type:'text/plain;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=find().title.replace(/[\\/:*?"<>|]/g,'_')+(word?'_中文笔记.docx':'_中文笔记.txt');const filename=a.download;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000);toast('已下载：'+filename);
 }
+function batchLines(note){
+  const l=[note.title,fmtDate(note.created)+' · 简体中文 · 本地演示',''];
+  l.push('全部文本','会议纪要',...note.summaries.map(([t,k,v])=>sec(t)+'　'+k+'：'+v),'','录音原文',...note.lines.map(([t,k,v])=>sec(t)+'　'+k+'：'+v),'','智能笔记',note.aiNotes,'','智能洞察',note.insight,'','待办事项',...note.tasks.map(a=>a.text+'｜负责人：'+a.who+'｜时间：'+a.due),'','手写 OCR','本演示未包含手写页面，保留此栏目以展示 PC 端合并导出范围。','录音文件','预设音频占位（演示模式，不接真实麦克风）','');
+  return l;
+}
+function batchExportDialog(){
+  const chosen=notes.filter(n=>batchSelected.includes(n.id));
+  if(!chosen.length){toast('请先选择要导出的笔记');return}
+  openDialog('批量导出笔记','<p class="dialog-sub">已选择 <strong>'+chosen.length+' 条笔记</strong>。按 PC 端规则，将每条笔记的全部文本与录音文件合并导出；多条笔记自动打包为 ZIP。</p><div class="batch-export-summary"><div><strong>导出范围</strong><span>全部文本（原文、AI 笔记、会议纪要、智能洞察、手写 OCR）+ 录音文件</span></div><div><strong>本地文件</strong><span>'+chosen.map(n=>esc(n.title)).join('、')+'</span></div></div><label class="format-label">文件格式<select id="batchFormat"><option value="word">Word（DOCX）</option><option value="pdf">PDF（演示流程）</option><option value="mp3">MP3（演示占位）</option><option value="md">Markdown（MD）</option></select></label><p id="batchFilename" class="small-note">预计生成 '+(chosen.length>1?'1 个 ZIP 包，包含 ':'')+chosen.length+' 个文件</p><div id="batchProgress" class="batch-progress" hidden><div class="batch-progress-track"><span></span></div><p role="status" aria-live="polite">准备内容…</p></div><p class="small-note">文件只在本机生成，不上传到服务器；PDF 与 MP3 在此 Demo 中仅演示导出流程。</p>',btn('取消','close')+btn('开始生成','batch-start','download','btn-primary'));
+}
+function batchStart(){
+  const progress=$('#batchProgress'), text=$('#batchProgress p'), track=$('#batchProgress span');
+  if(!progress)return;
+  progress.hidden=false;dlg.querySelector('[data-act="batch-start"]').disabled=true;
+  const steps=[['准备内容…',28],['合并全部文本…',64],['打包下载…',100]];let i=0;
+  const tick=()=>{text.textContent=steps[i][0];track.style.width=steps[i][1]+'%';if(i<steps.length-1){i++;setTimeout(tick,520)}else{dlg.querySelector('[data-act="batch-start"]').textContent='下载导出包';dlg.querySelector('[data-act="batch-start"]').dataset.act='batch-download';dlg.querySelector('[data-act="batch-start"]').disabled=false;$('.dialog-status').textContent='批量导出已完成 · 本地演示';}};tick();
+}
+function batchDownload(){
+  const fmt=$('#batchFormat')?.value||'word', chosen=notes.filter(n=>batchSelected.includes(n.id)), lines=['闪记批量导出','导出范围：全部文本 + 录音文件','生成方式：本地演示，不上传',''];
+  chosen.forEach((n,i)=>{lines.push(...batchLines(n));if(i<chosen.length-1)lines.push('==============================','')});
+  if(fmt==='pdf'||fmt==='mp3'){toast(fmt==='pdf'?'PDF 已完成模拟，演示版未生成真实 PDF 文件':'MP3 已完成模拟，演示版不接真实录音文件');return}
+  const multi=chosen.length>1, base='闪记批量导出_'+chosen.length+'条笔记', ext=fmt==='md'?'.md':'.docx';
+  const blob=fmt==='md'?new Blob(['\ufeff',lines.join('\n')],{type:'text/markdown;charset=utf-8'}):createWordBlob(lines);
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=base+(multi?'_ZIP内预览':'')+ext;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000);toast('已下载中文导出文件：'+a.download);closeDialog();
+}
 async function copy(){
   if(!sharePick?.length)return;
   const area=$('#sharePreview');
   try{await navigator.clipboard.writeText(area.value);toast('已复制 '+sharePick.length+' 项中文内容');}
   catch{area.focus();area.select();try{if(document.execCommand('copy')){toast('已复制 '+sharePick.length+' 项中文内容');return}}catch{}toast(chineseError)}
+}
+function batchText(n){
+  const out=[n.title,fmtDate(n.created)+' · 简体中文 · 批量导出演示','', '会议纪要',...n.summaries.map(([t,k,v])=>sec(t)+'　'+k+'：'+v),'','录音原文',...n.lines.map(([t,k,v])=>sec(t)+'　'+k+'：'+v),'','智能笔记',n.aiNotes,'','智能洞察',n.insight,'','待办事项',...n.tasks.map(a=>a.text+'｜负责人：'+a.who+'｜时间：'+a.due),'','录音文件','本地演示音频占位：不生成真实录音文件。'];
+  return out.join('\n');
+}
+function createZipBlob(files){
+  const encoder=new TextEncoder(), table=Uint32Array.from({length:256},(_,byte)=>{let c=byte;for(let i=0;i<8;i++)c=(c>>>1)^((c&1)?0xedb88320:0);return c});
+  const chunks=[],central=[];let offset=0,centralSize=0;
+  const asBytes=v=>typeof v==='string'?encoder.encode(v):new Uint8Array(v);
+  for(const file of files){const name=encoder.encode(file.name),body=asBytes(file.data);let crc=0xffffffff;for(const byte of body)crc=(crc>>>8)^table[(crc^byte)&255];crc=(crc^0xffffffff)>>>0;const local=new Uint8Array(30+name.length),l=new DataView(local.buffer);l.setUint32(0,0x04034b50,true);l.setUint16(4,20,true);l.setUint16(6,0x0800,true);l.setUint16(8,0,true);l.setUint16(10,0,true);l.setUint16(12,0,true);l.setUint32(14,crc,true);l.setUint32(18,body.length,true);l.setUint32(22,body.length,true);l.setUint16(26,name.length,true);l.setUint16(28,0,true);local.set(name,30);const record=new Uint8Array(46+name.length),c=new DataView(record.buffer);c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,0,true);c.setUint16(14,0,true);c.setUint32(16,crc,true);c.setUint32(20,body.length,true);c.setUint32(24,body.length,true);c.setUint16(28,name.length,true);c.setUint16(30,0,true);c.setUint16(32,0,true);c.setUint16(34,0,true);c.setUint16(36,0,true);c.setUint32(38,0,true);c.setUint32(42,offset,true);record.set(name,46);chunks.push(local,body);central.push(record);offset+=local.length+body.length;centralSize+=record.length}
+  const end=new Uint8Array(22),e=new DataView(end.buffer);e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,centralSize,true);e.setUint32(16,offset,true);return new Blob([...chunks,...central,end],{type:'application/zip'});
+}
+function batchExportDialog(){
+  if(!batchSelected.length){toast('请先选择至少一条笔记');return}
+  const chosen=notes.filter(n=>batchSelected.includes(n.id));
+  openDialog('批量导出笔记','<p class="dialog-sub">已选择 '+chosen.length+' 条笔记。导出范围固定为「全部文本 + 录音文件」，适配不同来源的笔记。</p><div class="export-choices">'+chosen.map(n=>'<span class="badge">'+esc(n.title)+'</span>').join('')+'</div><label class="format-label">导出格式<select id="batchFormat"><option value="word">Word（DOCX）</option><option value="pdf">PDF</option><option value="mp3">MP3</option><option value="md">Markdown（MD）</option></select></label><div class="batch-progress" id="batchProgress" hidden><div id="batchState" role="status" aria-live="polite">准备导出</div><div class="batch-progress-track"><b id="batchProgressBar"></b></div><div class="batch-progress-meta"><span>本地生成，不上传</span><span id="batchPercent">0%</span></div></div><p class="small-note">多条笔记会打包为一个中文 ZIP 文件；MP3 在本地演示中使用音频占位说明，不生成真实录音。</p>',btn('取消','close')+btn('开始批量导出','batch-run','download','btn-primary'));
+}
+async function batchExportRun(){
+  if(!batchSelected.length)return;
+  const run=$('#batchProgress'),state=$('#batchState'),bar=$('#batchProgressBar'),pct=$('#batchPercent'),go=dlg.querySelector('[data-act="batch-run"]');if(!run||!go)return;go.disabled=true;run.hidden=false;
+  const chosen=notes.filter(n=>batchSelected.includes(n.id)),format=$('#batchFormat').value;let progress=0;state.textContent='正在准备 '+chosen.length+' 条笔记…';
+  await new Promise(resolve=>{const timer=setInterval(()=>{progress=Math.min(100,progress+20);bar.style.width=progress+'%';pct.textContent=progress+'%';state.textContent=progress<100?'正在整理第 '+Math.min(chosen.length,Math.ceil(progress/100*chosen.length))+' 条笔记…':'正在打包中文 ZIP…';if(progress>=100){clearInterval(timer);resolve()}},130)});
+  const suffix={word:'docx',pdf:'pdf',mp3:'mp3',md:'md'}[format]||'txt',files=[];chosen.forEach(n=>{files.push({name:n.title+'_全部文本.'+suffix,data:batchText(n)});if(format==='mp3')files.push({name:n.title+'_录音文件说明.txt',data:'本地演示音频占位：未生成真实录音文件。'})});
+  const blob=createZipBlob(files),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='闪记批量导出_'+chosen.length+'条笔记.zip';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000);state.textContent='批量导出完成，中文 ZIP 已下载';toast('已下载：闪记批量导出_'+chosen.length+'条笔记.zip');go.textContent='已完成';
 }
 function importDialog(){
   if(record){toast('请先结束并保存当前录音，再导入音频');return}
@@ -549,6 +605,13 @@ document.addEventListener('click',e=>{
     case 'sample-actions':detail('sample','actions');break;
     case 'record':start();break;
     case 'clear-filter':search='';filter='all';if($('#noteSearch'))$('#noteSearch').value='';if($('#sourceFilter'))$('#sourceFilter').value='all';if($('#libraryBody'))$('#libraryBody').innerHTML=listContent();toast('已清除搜索和来源筛选');break;
+    case 'batch-mode':batchMode=true;batchSelected=[];render();break;
+    case 'batch-exit':batchMode=false;batchSelected=[];render();break;
+    case 'batch-toggle':{const index=batchSelected.indexOf(id);if(index>=0)batchSelected.splice(index,1);else batchSelected.push(id);render();break;}
+    case 'batch-all':batchSelected=notes.filter(n=>(!search||n.title.includes(search))&&(filter==='all'||n.source===filter)).map(n=>n.id);render();break;
+    case 'batch-clear':batchSelected=[];render();break;
+    case 'batch-export':batchExportDialog();break;
+    case 'batch-run':void batchExportRun();break;
     case 'confirm-record':beginRecord();break;
     case 'pause': if(record){if(!record.paused)record.t=recordTime();else record.start=Date.now();record.paused=!record.paused;updateRecord();toast(record.paused?'录音、计时与字幕已暂停':'录音、计时与字幕已恢复')}break;
     case 'mark':markNow();break;
@@ -598,6 +661,14 @@ document.addEventListener('click',e=>{
     case 'add-all':n.tasks.forEach(t=>t.added=true);persist();render();toast('已确认全部行动项');break;
     case 'filter-task':taskFilter=b.dataset.key;render();break;
     case 'task-source':detail(id,'raw');seek(+time,true);break;
+    case 'batch-mode':batchMode=true;batchSelected=[];render();toast('已进入批量选择');break;
+    case 'batch-toggle':if(batchSelected.includes(id))batchSelected=batchSelected.filter(x=>x!==id);else batchSelected.push(id);render();break;
+    case 'batch-all':batchSelected=notes.filter(n=>(!search||n.title.includes(search))&&(filter==='all'||n.source===filter)).map(n=>n.id);render();toast('已全选当前列表');break;
+    case 'batch-clear':batchSelected=[];render();break;
+    case 'batch-exit':batchMode=false;batchSelected=[];render();break;
+    case 'batch-export':batchExportDialog();break;
+    case 'batch-start':batchStart();break;
+    case 'batch-download':batchDownload();break;
     case 'export':exportDialog();break;
     case 'download':download();break;
     case 'copy':void copy();break;
