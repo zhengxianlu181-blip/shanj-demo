@@ -86,6 +86,7 @@ body,.main{background:#f5f7fb}.sidebar,.topbar{background:#fff;border-color:#e4e
 </style>
 <style id="app-reference-overrides">
 .mindmap-branch:nth-child(1) .mindmap-node{border-top:3px solid #4b82e8}.mindmap-branch:nth-child(2) .mindmap-node{border-top:3px solid #d28b54}.mindmap-branch:nth-child(3) .mindmap-node{border-top:3px solid #3b9b78}.mindmap-branch:nth-child(4) .mindmap-node{border-top:3px solid #9272c7}
+.assistant-attachments{padding:16px 20px;border-bottom:1px solid #e8edf4;background:#f8faff}.assistant-attachment-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.assistant-attachment-head strong{font-size:13px}.assistant-attachment-head small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.assistant-attachment-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:12px}.assistant-attachment-pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}.assistant-attachment-pill{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:6px 9px;border:1px solid #d7e4f7;border-radius:7px;background:#fff;color:#31577f;font-size:12px}.assistant-attachment-pill .icon{width:13px;height:13px;color:#3b73d4}.assistant-input-row{align-items:flex-end}.assistant-input-row textarea{flex:1;min-width:0;min-height:78px;resize:vertical;border:1px solid #d7e2f1;border-radius:9px;padding:10px 12px;background:#fff;line-height:1.6}.assistant-input-row textarea:focus{border-color:#6a98e7;outline:2px solid #dbe8ff}.assistant-input-actions{display:flex;align-items:center;gap:7px}.assistant-input-actions .btn{min-height:40px}.assistant-attach-btn{width:40px;padding:0}.attachment-options{display:grid;gap:8px;margin:13px 0}.attachment-option{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid #dbe4f1;border-radius:9px;background:#fbfcff;cursor:pointer}.attachment-option:has(input:checked){border-color:#9bbcf0;background:#f0f6ff}.attachment-option input{margin-top:3px;accent-color:var(--blue)}.attachment-option strong,.attachment-option small{display:block}.attachment-option small{color:var(--muted);font-size:12px;margin-top:2px}.attachment-local{display:flex;align-items:center;gap:8px;padding:11px 12px;border:1px dashed #b5c9e7;border-radius:9px;background:#f6f9ff;color:#2b5fa8;font-size:12px}.attachment-local .icon{width:15px;height:15px}.attachment-local input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
 </style>
 </head>
 <body>
@@ -221,7 +222,7 @@ if(!notes.some(n=>n.id==='followup'))notes.push(makeNote('followup','桌面录�
 if(!notes.some(n=>n.id==='imported'))notes.push(makeNote('imported','本地导入','秋季新品发布会筹备会 · 负责人同步',[],new Date(2026,10,7,14,26).getTime()));
 let prefs=load(keys[1],{dictionary:'',device:true});
 notes=notes.map(n=>({...n,decisions:n.decisions||structuredClone(initial.decisions),openQuestions:n.openQuestions||structuredClone(initial.openQuestions),quickNotes:Array.isArray(n.quickNotes)?n.quickNotes:[],rawEdited:!!n.rawEdited,mindmap:n.mindmap||structuredClone(mindmap),marks:(n.marks||[]).map(m=>({...m,kind:m.kind||'focus'}))}));
-let page='home', noteId='sample', tab='minutes', filter='all', search='', record=null, job=load(keys[2],null), sourceAt=-1, position=0, rate=1, playback=null, speech=null, lastLine=-1, toastId=0, taskFilter='all', sharePick=null, followPlay=true, lastEditSnapshot=null, batchMode=false, batchSelected=[];
+let page='home', noteId='sample', tab='minutes', filter='all', search='', record=null, job=load(keys[2],null), sourceAt=-1, position=0, rate=1, playback=null, speech=null, lastLine=-1, toastId=0, taskFilter='all', sharePick=null, followPlay=true, lastEditSnapshot=null, batchMode=false, batchSelected=[], assistantAttachments=['sample'];
 prefs.caption={enabled:true,size:'medium',theme:'dark',speaker:true,placement:'bottom',...prefs.caption};
 let dockOpen=false,dockCompact=false,dockXY=null,lastFollowAt=-1,markEditIndex=-1,rawQuery='';
 const find=()=>notes.find(n=>n.id===noteId)||notes[0];
@@ -481,20 +482,32 @@ function todoView(){
 }
 function assistantView(){
   return pageTop('会议工作台','智能助手','围绕当前会议继续提问、整理和推进工作。',btn('打开演示样例','sample','play-circle','btn-primary'))+
-  '<section class="assistant-hero card"><div><span class="eyebrow">本地会议助手 · 演示模式</span><h2>把会议内容问清楚，再继续推进</h2><p>我已经载入《秋季新品发布会筹备会》的纪要、原文和待办，可以回答问题，也可以帮你准备下一步动作。</p></div><span class="agent-mark">本地预设<br>不连接外部应用</span></section>'+ 
-  '<section class="assistant-workspace card"><div class="assistant-context"><div class="assistant-avatar">闪</div><div><strong>闪记助手</strong><small>已载入 4 段原文 · 3 位参会人 · 3 项待办</small></div><span class="badge">仅使用本地内容</span></div><div class="assistant-thread"><div class="assistant-bubble assistant-bubble-bot"><strong>我可以帮你做什么？</strong><p>你可以问会议决定、负责人、时间安排，也可以让我整理项目简报或准备跟进会议。</p><div class="assistant-evidence">每个回答都可以回到原文时间点。</div></div><div id="answer" class="answer assistant-answer" hidden></div></div><div class="assistant-quick"><span>快速提问</span>'+[['0','这场会议有哪些关键决定？'],['12','谁负责回归测试？'],['6','发布页文案什么时候定稿？']].map(([t,q])=>btn(q,'ask','sparkles','btn-light','data-time="'+t+'"')).join('')+'</div><div class="assistant-input-row"><input id="assistantInput" placeholder="例如：把这场会议的待办按负责人整理出来" aria-label="输入给智能助手的问题"><button type="button" class="btn btn-primary" data-act="assistant-send">发送</button></div><p class="small-note assistant-note">演示模式：回答来自本地预设会议内容，不连接外部智能服务。</p></section>'+ 
-  '<div class="assistant-actions-grid"><section class="detail-box card"><div class="section-top"><div><h2>继续工作</h2><p class="small-note">把回答直接变成下一步动作。</p></div><span class="state-chip">演示入口</span></div><div class="agent-actions">'+[['brief','生成项目简报','file-text'],['share','分发给负责人','share-2'],['schedule','安排跟进会议','clock'],['weekly','设置周期汇总','radio']].map(([k,l,i])=>btn(l,'agent-action',i,'btn-light','data-kind="'+k+'"')).join('')+'</div></section><section class="detail-box card"><div class="section-top"><h2>会议上下文</h2><span class="badge">可核对</span></div><p class="prose">关键决定：周五下午三点上线。风险：登录和上传回归测试需在周四下午完成。</p>'+btn('查看原文','tab','link','btn-light','data-tab="raw"')+'</section></div>';
+  '<section class="assistant-hero card"><div><span class="eyebrow">本地会议助手 · 演示模式</span><h2>把会议内容问清楚，再继续推进</h2><p>先添加一场或多场会议，再向助手提问。多场会议会合并分析，关键结论仍可回到原文核对。</p></div><span class="agent-mark">本地预设<br>不连接外部应用</span></section>'+ 
+  '<section class="assistant-workspace card"><div class="assistant-context"><div class="assistant-avatar">闪</div><div><strong>闪记助手</strong><small>已添加 '+assistantAttachments.length+' 场会议 · 仅使用本地内容</small></div><span class="badge">演示模式</span></div><div class="assistant-attachments"><div class="assistant-attachment-head"><div><strong>已添加附件</strong><small>'+(assistantAttachments.length>1?'已添加 '+assistantAttachments.length+' 场会议，将合并分析':'添加会议笔记，开始提问')+'</small></div><button type="button" class="btn btn-light" data-act="attach-context">'+ico('plus')+'添加附件</button></div><div class="assistant-attachment-pills">'+(assistantAttachments.length?assistantAttachments.map(id=>{const n=notes.find(x=>x.id===id);return n?'<span class="assistant-attachment-pill">'+ico('notebook')+esc(n.title)+'</span>':''}).join(''):'<span class="small-note">还没有添加会议</span>')+'</div><div class="assistant-attachment-actions">'+(assistantAttachments.length>1?btn('合并分析','assistant-merge','sparkles','btn-primary'):'')+btn('选择会议','attach-context','plus','btn-light')+'</div></div><div class="assistant-thread"><div class="assistant-bubble assistant-bubble-bot"><strong>我可以帮你做什么？</strong><p>你可以问关键决定、负责人和时间安排，也可以让我整理正式纪要、待办或多场会议合并分析。</p><div class="assistant-evidence">每个回答都可以回到原文时间点。</div></div><div id="answer" class="answer assistant-answer" hidden></div></div><div class="assistant-quick"><span>快速提问</span>'+[['0','帮我总结会议的核心内容'],['6','请整理会议待办'],['12','为我写一份会议纪要，要求正式、规范']].map(([t,q])=>btn(q,'ask','sparkles','btn-light','data-time="'+t+'"')).join('')+'</div><div class="assistant-input-row"><textarea id="assistantInput" rows="2" placeholder="直接发送消息，或先添加更多会议附件" aria-label="输入给智能助手的问题"></textarea><div class="assistant-input-actions"><button type="button" class="btn btn-light assistant-attach-btn" data-act="attach-context" aria-label="添加附件" title="添加附件">'+ico('plus')+'</button><button type="button" class="btn btn-primary" data-act="assistant-send">发送</button></div></div><p class="small-note assistant-note">演示模式：回答来自本地预设会议内容，不连接外部智能服务。</p></section>'+ 
+  '<div class="assistant-actions-grid"><section class="detail-box card"><div class="section-top"><div><h2>会后处理</h2><p class="small-note">把会议内容直接变成下一步交付物。</p></div><span class="state-chip">演示入口</span></div><div class="agent-actions">'+[['merge','合并会议分析','sparkles'],['minutes','生成正式纪要','file-text'],['todo','整理会议待办','check-square'],['report','生成项目汇报','notebook']].map(([k,l,i])=>btn(l,'agent-action',i,'btn-light','data-kind="'+k+'"')).join('')+'</div></section><section class="detail-box card"><div class="section-top"><h2>分析范围</h2><span class="badge">可核对</span></div><p class="prose">'+(assistantAttachments.length>1?'当前将合并分析 '+assistantAttachments.length+' 场会议。':'当前分析 1 场会议，可继续添加附件进行对比。')+'</p>'+btn('查看原文','tab','link','btn-light','data-tab="raw"')+'</section></div>';
 }
 function assistantSend(){
   const input=$('#assistantInput'), a=$('#answer'), q=input?.value.trim();
   if(!q){toast('请先输入想了解的问题');input?.focus();return}
-  const sample=notes.find(x=>x.id==='sample')||find();
+  const chosen=notes.filter(n=>assistantAttachments.includes(n.id));
+  const sample=chosen[0]||notes.find(x=>x.id==='sample')||find();
   let reply='根据《'+esc(sample.title)+'》的本地演示内容：'+esc(sample.insight);
-  if(/谁|负责人|回归|测试/.test(q))reply='回归测试由周宁负责，截止时间是周四下午，重点验证登录和上传。';
+  if(chosen.length>1||/共同|多场|合并|对比/.test(q))reply='基于已添加的 '+chosen.length+' 场会议合并分析：多场会议共同确认周五下午三点上线，首批开放给内测用户；陈哲负责发布页文案，周宁负责登录和上传回归测试，林晓负责汇总内测用户反馈。上线复盘还提醒继续关注内测反馈和发布后问题。';
+  else if(/谁|负责人|回归|测试/.test(q))reply='回归测试由周宁负责，截止时间是周四下午，重点验证登录和上传。';
   else if(/决定|上线|什么时候|时间/.test(q))reply='关键决定是周五下午三点上线，首批开放给内测用户。';
   else if(/待办|任务|负责人/.test(q))reply='陈哲负责发布页文案，周宁负责登录和上传回归测试，林晓负责汇总内测用户反馈。';
-  a.hidden=false;a.innerHTML='<div class="assistant-bubble assistant-bubble-user"><strong>你</strong><p>'+esc(q)+'</p></div><div class="assistant-bubble assistant-bubble-bot"><strong>闪记助手</strong><p>'+reply+'</p><div class="assistant-evidence">回答来自本地会议原文 · 可继续查看时间点</div></div>';
+  a.hidden=false;a.innerHTML='<div class="assistant-bubble assistant-bubble-user"><strong>你</strong><p>'+esc(q)+'</p></div><div class="assistant-bubble assistant-bubble-bot"><strong>闪记助手</strong><p>'+reply+'</p><div class="assistant-evidence">回答来自已添加的 '+chosen.length+' 场本地会议原文 · 可继续查看时间点</div></div>';
   input.value='';a.scrollIntoView({block:'nearest'});
+}
+function assistantMerge(){
+  const chosen=notes.filter(n=>assistantAttachments.includes(n.id)),a=$('#answer');
+  if(chosen.length<2){toast('请先添加至少两场会议，再进行合并分析');return}
+  a.hidden=false;a.innerHTML='<div class="assistant-bubble assistant-bubble-bot"><strong>多场会议合并分析</strong><p>已将 '+chosen.map(n=>'《'+esc(n.title)+'》').join('、')+' 放在一起分析。</p><p>共同结论：周五下午三点上线，首批开放给内测用户。分工为陈哲定稿发布页文案、周宁完成登录和上传回归测试、林晓汇总内测用户反馈。上线复盘补充关注内测反馈和发布后问题。</p><div class="assistant-evidence">结论来自本地演示笔记 · 可回到每场会议原文核对</div></div>';
+  a.scrollIntoView({block:'nearest'});toast('已生成多场会议合并分析');
+}
+function attachmentDialog(){
+  const choices=notes.map(n=>'<label class="attachment-option"><input type="checkbox" data-attachment-id="'+esc(n.id)+'" '+(assistantAttachments.includes(n.id)?'checked':'')+'><span><strong>'+esc(n.title)+'</strong><small>'+esc(n.source)+' · '+fmtDate(n.created)+' · 可用于合并分析</small></span></label>').join('');
+  openDialog('添加附件','<p class="dialog-sub">选择会议笔记，助手会基于这些内容一起分析。可以同时选择多场会议，比较共同结论和新增事项。</p><div class="attachment-options">'+choices+'</div><label class="attachment-local">'+ico('upload')+'<span>添加本地文件（演示入口，不上传）</span><input id="assistantFilePicker" type="file" accept="audio/*,.txt,.md,.docx"></label><p class="small-note">文件和会议内容只保留在当前浏览器的本地演示中，不生成公开链接。</p>',btn('取消','close')+btn('添加到助手','assistant-attach-save','check','btn-primary'));
 }
 function mineView(){
   return pageTop('账户与设备','我的','查看演示设备和转写设置。')+
@@ -707,10 +720,22 @@ document.addEventListener('click',e=>{
       a.hidden=false;a.innerHTML='<strong>根据《'+esc(sample.title)+'》</strong><p>'+esc(hit[2])+'</p>'+btn('查看原文 · '+sec(+time),'task-source','link','btn-light','data-id="'+esc(sample.id)+'" data-time="'+time+'"');break;
     }
     case 'agent-action':{
-      const messages={brief:'已生成项目简报预览，内容来自本地会议原文',share:'已模拟分发给负责人，未真实发送消息',schedule:'已准备跟进会议，未真实创建日程',weekly:'已设置周期汇总演示，未连接外部应用',connector:'已模拟同步到负责人，未真实连接飞书、钉钉或企业微信',calendar:'已准备下一次会议，未真实创建日历事件'};
-      toast(messages[b.dataset.kind]||'演示动作已完成');
+      const kind=b.dataset.kind;
+      if(kind==='merge'){assistantMerge();break}
+      if(kind==='minutes'){detail('sample','minutes');toast('已打开正式纪要预览，内容来自本地演示');break}
+      if(kind==='todo'){navigate('todo');toast('已打开会议待办，负责人和时间来自本地演示');break}
+      const messages={report:'已生成项目汇报预览，未真实发送或同步到外部应用',brief:'已生成项目简报预览，内容来自本地会议原文',share:'已模拟分发给负责人，未真实发送消息',schedule:'已准备跟进会议，未真实创建日程',weekly:'已设置周期汇总演示，未连接外部应用',connector:'已模拟同步到负责人，未真实连接飞书、钉钉或企业微信',calendar:'已准备下一次会议，未真实创建日历事件'};
+      toast(messages[kind]||'演示动作已完成');
       break;
     }
+    case 'attach-context':attachmentDialog();break;
+    case 'assistant-merge':assistantMerge();break;
+    case 'assistant-attach-save':{
+      const ids=[...dlg.querySelectorAll('[data-attachment-id]:checked')].map(x=>x.dataset.attachmentId);
+      if(!ids.length){toast('请至少选择一场会议');break}
+      assistantAttachments=ids;closeDialog();render();toast('已添加 '+ids.length+' 场会议，助手将基于附件分析');break;
+    }
+    case 'attach-local':toast('本地文件入口仅用于演示，未上传文件');break;
     case 'assistant-send':assistantSend();break;
     case 'device':prefs.device=!prefs.device;persist();render();break;
     case 'dictionary':openDialog('个人词典','<label class="preview-label">用逗号或换行分隔词语<textarea id="dictValue" rows="5" maxlength="5000">'+esc(prefs.dictionary)+'</textarea></label><p class="small-note">演示词典保存在本机，预设转写不会改变。</p>',btn('取消','close')+btn('保存词典','save-dict','check','btn-primary'));break;
@@ -739,9 +764,10 @@ document.addEventListener('change',e=>{
   if(t.name==='export-choice')refreshExport();
   if(t.id==='exportFormat')refreshExport();
   if(t.id==='filePicker'&&t.files[0]){$('#fileLabel').textContent='已选择本地文件';$('#fileState').textContent='将使用预设会议内容演示导入结果。';dlg.querySelector('[data-act="import-run"]').innerHTML=ico('play')+'开始整理演示'}
+  if(t.id==='assistantFilePicker'&&t.files[0]){toast('已选择本地文件；演示不会上传，仍使用预设会议内容')}
   if(t.hasAttribute('data-toggle-task')){const note=notes.find(n=>n.id===t.dataset.id);note.tasks[+t.dataset.i].done=t.checked;persist();render();toast(t.checked?'待办已完成':'已恢复为待处理')}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='assistantInput'){e.preventDefault();assistantSend()}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='assistantInput'&&!e.shiftKey){e.preventDefault();assistantSend()}});
 let dockDrag=null;
 document.addEventListener('pointerdown',e=>{
   const handle=e.target.closest('.dock-handle');if(!handle||e.target.closest('button')||e.button!==0)return;
