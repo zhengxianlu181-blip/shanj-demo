@@ -321,7 +321,7 @@ function vaultContains(note){return !!note&&prefs.privacy.vaultIds.includes(note
 function vaultLocked(note){return vaultContains(note)&&!vaultSessionUnlocked}
 function canReadNote(note){return !!note&&!vaultLocked(note)}
 function availableNotes(){return notes.filter(canReadNote)}
-function agentAvailableNotes(){return notes.filter(n=>!vaultContains(n))}
+function agentAvailableNotes(){return notes.filter(n=>!vaultContains(n)&&n.kind!=='document'&&Array.isArray(n.summaries)&&n.summaries.length)}
 function privacyAllowsAssistant(){return !prefs.privacy.offline}
 function privacyDate(t){return new Intl.DateTimeFormat('zh-CN',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(t)}
 function activeAgentGrant(){
@@ -539,7 +539,7 @@ function captionMarkup(s,kind){
   return '<div class="caption-box '+(c.theme==='light'?'light ':'')+(paused?'is-paused ':'')+(kind==='player'?'player-caption':'')+'" data-size="'+c.size+'"><div class="caption-meta"><span class="caption-state">'+status+'</span>'+(c.speaker?'<strong>'+esc(s.who)+'</strong>':'')+'<time>'+sec(s.time)+'</time></div>'+(s.previous?'<p class="caption-previous">上一句：'+esc(s.previous)+'</p>':'')+'<p class="caption-current">'+esc(s.text)+(s.typing?'<span class="caption-cursor" aria-hidden="true"></span>':'')+'</p><div class="caption-foot"><span>简体中文 · '+(s.live?'本地模拟转写':'来自已保存的录音原文')+'</span>'+(marked?'<span class="caption-mark">'+ico('flag')+' 该段有重点标记</span>':'')+'</div></div>';
 }
 function renderDock(){
-  const dock=$('#captionDock'),available=!!record||page==='detail';
+  const dock=$('#captionDock'),current=page==='detail'?find():null,available=!!record||(page==='detail'&&canReadNote(current));
   dock.hidden=!dockOpen||!available||!prefs.caption.enabled;
   if(dock.hidden)return;
   dock.className='caption-dock '+(prefs.caption.placement==='top'?'dock-top ':'')+(dockCompact?'compact':'');
@@ -644,7 +644,7 @@ function timeBtn(at){return '<button class="timestamp" data-act="source" data-ti
 function detailContent(n){
   const pending=job&&job.note?.id===n.id&&!job.finished;
   if(pending&&(tab!=='raw'||job.stage<2))return '<section class="detail-box card"><div class="section-top"><h2>'+(job.failed?'整理已暂停':'内容正在整理')+'</h2><span class="state-chip pending">'+(job.failed?'可重试':'处理中')+'</span></div><p class="prose">'+(job.stage>=2?'中文录音原文已完成；会议纪要、智能笔记、洞察和待办将在全部整理完成后开放。':'正在准备中文录音原文，当前还没有可查看的整理结果。')+'</p>'+(job.stage>=2?btn('查看已完成原文','tab','file-text','btn-light','data-tab="raw"'):'')+'<button type="button" class="btn btn-primary" data-go="processing">查看整理进度</button></section>';
-  if(tab==='raw')return '<section class="detail-box card">'+(n.rawEdited?'<div class="edited-warning">'+ico('alert-circle')+'<div><strong>纪要需要重新核对</strong><span>原文已修改，会议纪要和智能洞察可能需要重新核对。</span></div>'+(lastEditSnapshot?btn('撤销原文修改','undo-edit','close','btn-light'):'')+'</div>':'')+'<div class="section-top"><div><h2>录音原文</h2><p class="small-note">点击时间点定位回听进度，修改后会保留待核对标记。</p></div><div class="section-top-actions">'+btn('识别与纪要纠错','correction','check','btn-light')+'<button type="button" class="btn btn-light" data-act="speaker-batch">批量修改说话人</button></div></div>'+rows(n.lines,sourceAt)+'</section>'+rawAssociationPanel(n);
+  if(tab==='raw')return '<section class="detail-box card">'+(n.rawEdited?'<div class="edited-warning">'+ico('alert-circle')+'<div><strong>纪要需要重新核对</strong><span>原文已修改，会议纪要和智能洞察可能需要重新核对。</span></div>'+(lastEditSnapshot?.noteId===n.id?btn('撤销原文修改','undo-edit','close','btn-light'):'')+'</div>':'')+'<div class="section-top"><div><h2>录音原文</h2><p class="small-note">点击时间点定位回听进度，修改后会保留待核对标记。</p></div><div class="section-top-actions">'+btn('识别与纪要纠错','correction','check','btn-light')+'<button type="button" class="btn btn-light" data-act="speaker-batch">批量修改说话人</button></div></div>'+rows(n.lines,sourceAt)+'</section>'+rawAssociationPanel(n);
   if(tab==='actions')return '<section class="detail-box card"><div class="section-top"><div><h2>待办事项</h2><p class="small-note">先核对原文，再确认负责人和截止时间；确认后会进入待办。</p></div><div class="section-top-actions">'+btn('生成跟进草稿','followup-draft','file-text','btn-light','data-id="'+esc(n.id)+'"')+btn('确认全部行动项','add-all','plus','btn-primary',''+(n.tasks.every(x=>x.added)?'disabled':'')+'')+'</div></div>'+n.tasks.map((a,i)=>{const [label,klass]=taskStateMeta(a);return '<div class="action-row detail-task-row"><div class="task-main"><div class="task-title-row"><strong>'+esc(a.text)+'</strong><span class="task-state '+klass+'">'+label+'</span></div><div class="task-meta"><span>负责人：'+esc(a.who||'待指定')+'</span><span>截止：'+esc(a.due||'待补充')+'</span></div><p class="task-evidence">原文证据：「'+esc(taskEvidence(n,a))+'」</p></div><div class="task-actions">'+timeBtn(a.time)+btn('关联笔记','task-links','link','btn-light','data-id="'+esc(n.id)+'" data-i="'+i+'"')+btn('编辑','task-edit','edit-3','btn-light','data-id="'+esc(n.id)+'" data-i="'+i+'"')+(a.added?'<span class="state-chip">已加入待办</span>':btn('确认并加入','add-task','check','btn-primary','data-id="'+esc(n.id)+'" data-i="'+i+'"'))+'</div></div>'}).join('')+'</section>';
   if(tab==='mindmap')return '<section class="detail-box card mindmap-panel"><div class="section-top"><div><h2>会议思维导图</h2><p class="small-note">把纪要、负责人和时间点整理成一张可回看的结构图。</p></div><span class="badge">本地生成 · 可导出</span></div><div class="mindmap-canvas"><div class="mindmap-root"><span>秋季新品发布</span><small>会议共识</small></div><div class="mindmap-branches">'+(n.mindmap?.branches||[]).map((branch,bi)=>'<div class="mindmap-branch"><div class="mindmap-line"></div><div class="mindmap-node"><strong>'+esc(branch.title)+'</strong><div>'+branch.items.map((item,ii)=>'<button type="button" data-act="mindmap-source" data-time="'+(bi===0?0:bi===1?6:bi===2?12:18)+'" aria-label="查看 '+sec(bi===0?0:bi===1?6:bi===2?12:18)+' 原文">'+esc(item)+'</button>').join('')+'</div></div></div>').join('')+'</div></div><div class="mindmap-foot"><span>每个分支都能回到原文时间点；导出时会并入全部文本。</span>'+btn('导出思维导图','export','download','btn-light')+'</div></section>';
   if(tab==='marks')return '<section class="detail-box card"><div class="section-top"><div><h2>重点标记</h2><p class="small-note">决定、风险和争议点都保留时间点，点一下即可回听。</p></div><span class="badge">'+n.marks.length+' 个标记</span></div>'+ (n.marks.length?n.marks.map(m=>'<div class="action-row"><div><strong>'+ico('flag')+' '+esc(m.label)+'</strong><small>'+((m.kind==='decision'?'关键决定':m.kind==='risk'?'风险提示':'重点片段'))+'</small></div>'+timeBtn(m.at)+'</div>').join(''):'<p class="empty">还没有标记。录音时可以标记关键时刻。</p>')+'</section>';
@@ -661,7 +661,8 @@ function seek(t,openRaw=false){
 }
 function zhVoice(){return window.speechSynthesis?.getVoices().find(v=>v.localService&&/^zh[-_]/i.test(v.lang)&&!/(HK|TW)$/i.test(v.lang))}
 function readVoice(){
-  const current=find().lines.filter(l=>l[0]<=position).at(-1);
+  const note=find();if(page==='detail'&&!canReadNote(note))return;
+  const current=note.lines.filter(l=>l[0]<=position).at(-1);
   if(!current||current[0]===lastLine)return;lastLine=current[0];
   const v=zhVoice();if(!v)return;
   window.speechSynthesis.cancel();speech=new SpeechSynthesisUtterance(current[2]);speech.voice=v;speech.lang='zh-CN';speech.rate=rate;window.speechSynthesis.speak(speech);
@@ -672,6 +673,7 @@ function stopPlay(){
 }
 function play(){
   if(record){toast('请先结束并保存当前录音，再回听已保存笔记');return}
+  if(page==='detail'&&!canReadNote(find())){toast('这条笔记已在演示保险箱中，请先解锁');return}
   if(playback){stopPlay();return}
   if(position>=24)position=0;
   if(!zhVoice())toast('此浏览器未提供本机中文语音，将演示文字与进度联动');
@@ -680,6 +682,7 @@ function play(){
   paintPlayer();
 }
 function paintPlayer(){
+  if(page==='detail'&&!canReadNote(find()))return;
   if(!$('#seek'))return;
   $('#seek').value=position;$('#rate').value=rate;
   $('#playTime').textContent=sec(position)+' / 00:24';$('#playNote').textContent=zhVoice()?'中文合成语音 · 演示':'音文同步 · 模拟回听';
@@ -701,7 +704,7 @@ function taskLinks(t){return Array.isArray(t.links)?t.links:[]}
 function taskLinkKey(x){return String(x.noteId||'')+'@'+String(x.time??'')}
 function taskLinkItems(t){return taskLinks(t).map(x=>{const n=notes.find(v=>v.id===x.noteId);return n&&canReadNote(n)?{n,time:Number(x.time)||0}:null}).filter(Boolean)}
 function rawAssociationPanel(n){
-  const rows=n.lines.map(([at,who,text])=>{const related=allTasks().filter(({t})=>taskLinks(t).some(x=>x.noteId===n.id&&Number(x.time)===at));return '<div class="raw-association-row"><div><strong>'+sec(at)+' · '+esc(who)+'</strong><small>'+esc(text)+'</small></div><span class="badge">'+(related.length?'已关联 '+related.length+' 项':'未关联待办')+'</span>'+btn('关联待办','associate-task','link','btn-light','data-note-id="'+esc(n.id)+'" data-time="'+at+'"')+'</div>'}).join('');
+  const rows=n.lines.map(([at,who,text])=>{const related=allTasks().filter(({n:tn,t})=>(tn.id===n.id&&Number(t.time)===at)||taskLinks(t).some(x=>x.noteId===n.id&&Number(x.time)===at));return '<div class="raw-association-row"><div><strong>'+sec(at)+' · '+esc(who)+'</strong><small>'+esc(text)+'</small></div><span class="badge">'+(related.length?'已关联 '+related.length+' 项':'未关联待办')+'</span>'+btn('关联待办','associate-task','link','btn-light','data-note-id="'+esc(n.id)+'" data-time="'+at+'"')+'</div>'}).join('');
   return '<section class="detail-box card raw-association"><div class="section-top"><div><h2>原文关联待办</h2><p class="small-note">在当前或其他会议中选择已有待办，建立反向关联；原始来源不会被替换。</p></div><span class="badge">可追溯</span></div>'+rows+'</section>';
 }
 function taskLinkDialog(id,i){
@@ -765,7 +768,7 @@ function attachmentDialog(){
 }
 function taskEditDialog(id,i){
   const n=notes.find(x=>x.id===id)||find(), t=n.tasks[+i];
-  if(!t)return;
+  if(!n||!privacyGuardNote(n)||!t)return;
   openDialog('编辑待办','<p class="dialog-sub">确认前可补充负责人和截止时间。编辑任务不会覆盖会议原话。</p><div class="task-edit-grid"><label>任务内容<textarea id="taskText" maxlength="120">'+esc(t.text)+'</textarea></label><label>负责人<input id="taskWho" maxlength="20" value="'+esc(t.who||'')+'" placeholder="例如：陈哲"></label><label>截止时间<input id="taskDue" maxlength="40" value="'+esc(t.due||'')+'" placeholder="例如：周四下午五点前"></label><label>执行状态<select id="taskStatus"><option value="unconfirmed" '+(taskState(t)==='unconfirmed'?'selected':'')+'>待确认</option><option value="confirmed" '+(taskState(t)==='confirmed'?'selected':'')+'>待处理（已确认）</option><option value="progress" '+(taskState(t)==='progress'?'selected':'')+'>进行中</option><option value="done" '+(taskState(t)==='done'?'selected':'')+'>已完成</option></select></label></div><p class="small-note">原文来源：'+esc(n.title)+' · '+sec(t.time)+'<br>「'+esc(taskEvidence(n,t))+'」</p>',btn('取消','close')+btn('保存待办','save-task','check','btn-primary','data-id="'+esc(n.id)+'" data-i="'+i+'"'));
 }
 function followupDraftDialog(id){
@@ -833,6 +836,7 @@ function exportLines(){
   return l;
 }
 function exportDialog(){
+  if(!canReadNote(find()))return;
   sharePick=['minutes','actions'];
   openDialog('分享与导出','<p class="dialog-sub">勾选要交付的内容，可复制到聊天或下载中文文件。</p><div class="export-choices">'+shareOptions.map(([k,l])=>'<label><input type="checkbox" name="export-choice" value="'+k+'" '+(sharePick.includes(k)?'checked':'')+'>'+l+'</label>').join('')+'</div><label class="format-label">文件格式<select id="exportFormat"><option value="word">可编辑文档（DOCX）</option><option value="text">纯文本（TXT）</option></select></label><p id="exportFilename" class="small-note"></p><label class="preview-label">中文内容预览<textarea id="sharePreview" readonly rows="8" aria-label="中文内容预览"></textarea></label><p class="small-note">内容来自本地预设会议原文。演示版只做本地复制和下载，不会生成公开链接。</p>',btn('复制分享内容','copy','copy')+btn('下载中文文件','download','download','btn-primary'));
   refreshExport();
@@ -844,6 +848,7 @@ function refreshExport(){
   dlg.querySelectorAll('[data-act="download"],[data-act="copy"]').forEach(b=>b.disabled=!sharePick.length);
 }
 function download(){
+  if(!canReadNote(find()))return;
   if(!sharePick?.length)return;
   const ls=exportLines(), word=$('#exportFormat').value==='word';
   const blob=word?createWordBlob(ls):new Blob(['\ufeff',ls.join('\r\n')],{type:'text/plain;charset=utf-8'});
@@ -875,6 +880,7 @@ function batchDownload(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=base+(multi?'_ZIP内预览':'')+ext;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000);toast('已下载中文导出文件：'+a.download);closeDialog();
 }
 async function copy(){
+  if(!canReadNote(find()))return;
   if(!sharePick?.length)return;
   const area=$('#sharePreview');
   try{await navigator.clipboard.writeText(area.value);toast('已复制 '+sharePick.length+' 项中文内容');}
@@ -971,11 +977,11 @@ document.addEventListener('click',e=>{
     case 'edit':editDialog();break;
     case 'speaker-batch':speakerBatchDialog();break;
     case 'speaker-line':sourceAt=+time;speakerBatchDialog();$('#speakerFrom').value=(n.lines.find(l=>l[0]===sourceAt)||n.lines[0])[1];$('#speakerScope').value='current';$('#speakerTo').value=$('#speakerFrom').value;$('#speakerScope').dispatchEvent(new Event('change'));break;
-    case 'undo-edit':{if(lastEditSnapshot){n.lines=structuredClone(lastEditSnapshot.lines);n.summaries=structuredClone(lastEditSnapshot.summaries);n.aiNotes=lastEditSnapshot.aiNotes;n.insight=lastEditSnapshot.insight;n.rawEdited=false;lastEditSnapshot=null;persist();render();toast('已撤销原文修改，纪要恢复为可核对状态')}break;}
+    case 'undo-edit':{if(lastEditSnapshot?.noteId===n.id){n.lines=structuredClone(lastEditSnapshot.lines);n.summaries=structuredClone(lastEditSnapshot.summaries);n.aiNotes=lastEditSnapshot.aiNotes;n.insight=lastEditSnapshot.insight;n.rawEdited=false;lastEditSnapshot=null;persist();render();toast('已撤销原文修改，纪要恢复为可核对状态')}break;}
     case 'save-edit':{
       const fields=[...dlg.querySelectorAll('[data-edit-i]')].map(f=>f.value.trim());
       if(fields.some(x=>!x)){toast('请填写内容后再保存');break}
-      lastEditSnapshot={lines:structuredClone(n.lines),summaries:structuredClone(n.summaries),aiNotes:n.aiNotes,insight:n.insight};fields.forEach((v,j)=>{if(tab==='raw')n.lines[j][2]=v;else if(tab==='minutes')n.summaries[j][2]=v;else if(tab==='ai')n.aiNotes=v;else n.insight=v});if(tab==='raw')n.rawEdited=true;persist();closeDialog();render();toast('修改已保存；纪要未自动更新，请重新核对');break;
+      lastEditSnapshot={noteId:n.id,lines:structuredClone(n.lines),summaries:structuredClone(n.summaries),aiNotes:n.aiNotes,insight:n.insight};fields.forEach((v,j)=>{if(tab==='raw')n.lines[j][2]=v;else if(tab==='minutes')n.summaries[j][2]=v;else if(tab==='ai')n.aiNotes=v;else n.insight=v});if(tab==='raw')n.rawEdited=true;persist();closeDialog();render();toast('修改已保存；纪要未自动更新，请重新核对');break;
     }
     case 'save-speaker':{
       const from=$('#speakerFrom').value,to=$('#speakerTo').value.trim(),scope=$('#speakerScope').value;
@@ -995,7 +1001,7 @@ document.addEventListener('click',e=>{
     case 'associate-task':associateTaskDialog(b.dataset.noteId,+time);break;
     case 'task-links':taskLinkDialog(id,+i);break;
     case 'save-task-links':{const nt=notes.find(x=>x.id===id),tt=nt?.tasks?.[+i];if(!tt)break;tt.links=taskLinks(tt).filter(l=>!canReadNote(notes.find(x=>x.id===l.noteId))).concat([...dlg.querySelectorAll('[data-task-link-note]:checked')].map(x=>({noteId:x.dataset.taskLinkNote,time:+x.dataset.taskLinkTime})));persist();closeDialog();render();toast('关联笔记已保存');break;}
-    case 'associate-save':{const target=notes.find(x=>x.id===b.dataset.noteId),at=+b.dataset.time;if(!target||!canReadNote(target))break;const keys=[...dlg.querySelectorAll('[data-associate-task]:checked')];keys.forEach(x=>{const tn=notes.find(v=>v.id===x.dataset.taskNote),tt=tn?.tasks?.[+x.dataset.taskI];if(!tt)return;tt.links=taskLinks(tt).filter(l=>!(l.noteId===target.id&&Number(l.time)===at));tt.links.push({noteId:target.id,time:at})});persist();closeDialog();render();toast('已建立待办与原文的反向关联');break;}
+    case 'associate-save':{const target=notes.find(x=>x.id===b.dataset.noteId),at=+b.dataset.time;if(!target||!canReadNote(target))break;const keys=[...dlg.querySelectorAll('[data-associate-task]:checked')];if(!keys.length){toast('请至少选择一项待办');break}keys.forEach(x=>{const tn=notes.find(v=>v.id===x.dataset.taskNote),tt=tn?.tasks?.[+x.dataset.taskI];if(!tt)return;tt.links=taskLinks(tt).filter(l=>!(l.noteId===target.id&&Number(l.time)===at));tt.links.push({noteId:target.id,time:at})});persist();closeDialog();render();toast('已建立待办与原文的反向关联');break;}
     case 'task-edit':taskEditDialog(id,+i);break;
     case 'save-task':{
       const note=notes.find(x=>x.id===id),t=note?.tasks[+i];if(!t)break;
