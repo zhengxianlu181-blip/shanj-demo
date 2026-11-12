@@ -671,7 +671,7 @@ function stopPlay(){
   clearInterval(playback);playback=null;lastLine=-1;
   if(speech){window.speechSynthesis.cancel();speech=null}paintPlayer();
 }
-function play(){\r?\n  if(!canReadNote(find()))return;\r?\n  if(record){toast('请先结束并保存当前录音，再回听已保存笔记');return}
+function play(){`r`n  if(!canReadNote(find()))return;`r`n  if(record){toast('请先结束并保存当前录音，再回听已保存笔记');return}
   if(page==='detail'&&!canReadNote(find())){toast('这条笔记已在演示保险箱中，请先解锁');return}
   if(playback){stopPlay();return}
   if(position>=24)position=0;
@@ -1348,4 +1348,5 @@ render();
 </script>
 </body>
 </html>
+
 
