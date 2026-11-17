@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>闪记 · Windows 功能演示</title>
+  <style>
+    :root {
+      --ink: #18323a;
+      --muted: #72868b;
+      --line: #dbe7e5;
+      --paper: #f7fbfa;
+      --panel: #ffffff;
+      --mint: #dff4ed;
+      --mint-strong: #2c9d80;
+      --mint-deep: #14765f;
+      --amber: #f4b45f;
+      --danger: #bf5b5b;
+      --shadow: 0 18px 46px rgba(39, 83, 82, .09);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 78% 0%, rgba(210, 242, 232, .7), transparent 33rem),
+        var(--paper);
+      font: 15px/1.55 "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, .drop-zone:focus-visible {
+      outline: 3px solid rgba(44, 157, 128, .32);
+      outline-offset: 2px;
+    }
+
+    .app-shell { min-height: 100vh; display: flex; }
+    .sidebar {
+      width: 232px;
+      flex: 0 0 232px;
+      padding: 28px 18px 22px;
+      background: rgba(255, 255, 255, .75);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+    }
+    .brand { display: flex; gap: 11px; align-items: center; padding: 0 10px 32px; }
+    .brand-mark {
+      width: 36px; height: 36px; border-radius: 12px 12px 12px 4px;
+      display: grid; place-items: center; color: white; font-weight: 800;
+      background: var(--mint-deep); box-shadow: 5px 5px 0 #bfe7d9;
+    }
+    .brand strong { display: block; letter-spacing: .08em; font-size: 16px; }
+    .brand small { color: var(--muted); font-size: 11px; letter-spacing: .12em; }
+    .nav-label { color: #9aaeb0; font-size: 11px; padding: 0 12px 8px; letter-spacing: .08em; }
+    .nav { display: grid; gap: 6px; }
+    .nav button {
+      border: 0; background: transparent; color: #60777b; text-align: left;
+      border-radius: 11px; padding: 11px 12px; display: flex; gap: 11px; align-items: center;
+    }
+    .nav button:hover { background: #eff8f5; color: var(--ink); }
+    .nav button.active { color: var(--mint-deep); background: var(--mint); font-weight: 700; }
+    .nav-icon { width: 20px; text-align: center; font-size: 17px; }
+    .sidebar-footer { margin-top: auto; padding: 16px 12px 0; color: var(--muted); font-size: 12px; }
+    .sidebar-footer strong { color: var(--ink); display: block; margin-bottom: 4px; }
+
+    .main { flex: 1; min-width: 0; padding: 28px clamp(22px, 4vw, 64px) 52px; }
+    .topbar { max-width: 1180px; margin: 0 auto 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .eyebrow { color: var(--mint-deep); font-size: 12px; letter-spacing: .11em; margin-bottom: 6px; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(24px, 3vw, 34px); letter-spacing: -.035em; line-height: 1.15; }
+    .topbar-note { color: var(--muted); font-size: 13px; text-align: right; }
+    .window-pill { display: inline-flex; align-items: center; gap: 7px; margin-top: 6px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint-strong); box-shadow: 0 0 0 4px #dff4ed; }
+
+    .workspace { max-width: 1180px; margin: 0 auto; }
+    .mode-switch { display: inline-flex; padding: 5px; background: #e7f1ee; border-radius: 14px; margin-bottom: 18px; }
+    .mode-switch button {
+      border: 0; background: transparent; color: #6c8284; padding: 9px 18px; border-radius: 10px;
+    }
+    .mode-switch button.active { background: white; color: var(--ink); box-shadow: 0 3px 14px rgba(48, 91, 85, .1); font-weight: 700; }
+    .view { display: none; }
+    .view.active { display: block; animation: appear .25s ease-out; }
+    @keyframes appear { from { opacity: .2; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .view.active { animation: none; } }
+
+    .record-grid { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(280px, .78fr); gap: 18px; }
+    .card { background: rgba(255,255,255,.9); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+    .record-card { min-height: 555px; padding: 28px 30px; position: relative; overflow: hidden; }
+    .record-card::after { content: ""; position: absolute; width: 250px; height: 250px; border-radius: 50%; border: 1px solid #e2f1ec; right: -96px; top: -108px; pointer-events: none; }
+    .card-kicker { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 14px; }
+    .record-title { font-size: 22px; margin-top: 8px; letter-spacing: -.02em; }
+    .status-row { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px; margin-top: 12px; }
+    .status-row.recording { color: #a2672c; }
+    .status-row.recording .dot { background: var(--amber); box-shadow: 0 0 0 4px #fff1da; }
+    .timer { font-size: clamp(48px, 8vw, 86px); line-height: 1; letter-spacing: -.08em; font-variant-numeric: tabular-nums; margin: 43px 0 28px; color: #22464b; }
+    .wave { height: 72px; display: flex; align-items: center; gap: 5px; margin-bottom: 26px; }
+    .wave i { display: block; width: 4px; height: 12px; border-radius: 5px; background: #b9d9d0; transition: height .16s ease; }
+    .recording-live .wave i { animation: pulse 1.1s ease-in-out infinite alternate; }
+    .recording-live .wave i:nth-child(3n) { animation-delay: -.4s; }
+    .recording-live .wave i:nth-child(4n) { animation-delay: -.7s; }
+    @keyframes pulse { to { height: 53px; background: var(--mint-strong); } }
+    .control-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .primary, .secondary, .ghost {
+      border-radius: 10px; padding: 11px 17px; border: 1px solid var(--line); display: inline-flex; align-items: center; gap: 8px;
+    }
+    .primary { background: var(--mint-deep); color: white; border-color: var(--mint-deep); box-shadow: 0 5px 12px rgba(20, 118, 95, .16); }
+    .primary:hover { background: #0e644f; }
+    .secondary { background: #eff8f5; color: var(--mint-deep); border-color: #d3ede3; }
+    .ghost { background: white; color: #61777b; }
+    .control-row button[disabled] { opacity: .45; cursor: not-allowed; box-shadow: none; }
+    .capture-note { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 12px; }
+    .asr-status { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: #f4f9f7; color: #617c78; font-size: 12px; }
+
+    .side-stack { display: grid; gap: 18px; align-content: start; }
+    .transcript-card, .playback-card { padding: 22px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+    .section-head h2 { font-size: 16px; }
+    .section-head span { color: var(--muted); font-size: 12px; }
+    .copy-button { border: 0; color: var(--mint-deep); background: #ecf8f4; border-radius: 8px; padding: 7px 10px; }
+    .copy-button:hover { background: #d9f1e8; }
+    .transcript-box { min-height: 198px; max-height: 260px; overflow: auto; color: #405c61; font-size: 14px; }
+    .empty { color: #9aabad; padding: 18px 0; }
+    .line { padding: 8px 0; border-bottom: 1px solid #edf3f1; }
+    .line:last-child { border-bottom: 0; }
+    .interim { color: #8a9fa0; }
+    .audio-slot { border-radius: 12px; background: #f2f8f6; min-height: 86px; display: grid; place-items: center; color: var(--muted); padding: 12px; }
+    audio { width: 100%; }
+    .recording-meta { color: var(--muted); font-size: 12px; margin-top: 11px; }
+
+    .file-card { padding: 26px 30px; }
+    .file-intro { display: flex; justify-content: space-between; align-items: start; gap: 18px; margin-bottom: 20px; }
+    .file-intro h2 { font-size: 22px; margin-bottom: 6px; }
+    .file-intro p { color: var(--muted); max-width: 570px; }
+    .drop-zone { border: 1.5px dashed #9ed7c8; border-radius: 16px; background: #f1fbf7; min-height: 170px; display: grid; place-items: center; text-align: center; padding: 26px; }
+    .drop-zone.dragging { border-color: var(--mint-deep); background: #e5f7f0; }
+    .drop-icon { width: 47px; height: 47px; border-radius: 15px; display: grid; place-items: center; background: var(--mint); color: var(--mint-deep); font-size: 23px; margin: 0 auto 10px; }
+    .drop-zone strong { display: block; font-size: 16px; }
+    .drop-zone small { display: block; color: var(--muted); margin-top: 4px; }
+    .file-list { display: grid; gap: 10px; margin-top: 20px; }
+    .file-item { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    .file-type { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: #eaf5f2; color: var(--mint-deep); font-size: 18px; }
+    .file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+    .file-info { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .file-actions { display: flex; gap: 6px; align-items: center; }
+    .file-actions button { border: 0; background: transparent; color: var(--mint-deep); border-radius: 8px; padding: 7px 8px; }
+    .file-actions button:hover { background: var(--mint); }
+    .file-preview { grid-column: 2 / -1; width: 100%; max-height: 250px; border-radius: 10px; background: #122428; }
+    .notice { margin-top: 16px; padding: 11px 13px; border-radius: 10px; font-size: 12px; color: #6e5a38; background: #fff6e6; }
+    .notice.error { color: #8e4d4d; background: #fff0f0; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 860px) {
+      .sidebar { width: 74px; flex-basis: 74px; padding: 20px 10px; }
+      .brand { padding: 0 9px 26px; }
+      .brand > div:last-child, .nav-label, .nav button span:last-child, .sidebar-footer { display: none; }
+      .nav button { justify-content: center; padding: 12px 7px; }
+      .main { padding: 22px 16px 38px; }
+      .topbar { align-items: flex-start; }
+      .topbar-note { display: none; }
+      .record-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .file-intro { display: block; }
+      .file-intro .primary { margin-top: 14px; }
+      .record-card { padding: 23px 19px; }
+      .transcript-card, .playback-card, .file-card { padding: 19px; }
+      .file-item { grid-template-columns: 40px minmax(0,1fr); }
+      .file-actions { grid-column: 2; justify-content: flex-start; }
+      .file-preview { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="闪记主导航">
+      <div class="brand">
+        <div class="brand-mark">闪</div>
+        <div><strong>闪记</strong><small>AI NOTE</small></div>
+      </div>
+      <div class="nav-label">工作区</div>
+      <nav class="nav">
+        <button class="active" type="button" data-nav="notes"><span class="nav-icon">▤</span><span>笔记</span></button>
+        <button type="button" data-nav="files"><span class="nav-icon">□</span><span>文件</span></button>
+        <button type="button" data-nav="favorites"><span class="nav-icon">♡</span><span>收藏</span></button>
+        <button type="button" data-nav="settings"><span class="nav-icon">⚙</span><span>设置</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <strong>Windows 功能演示</strong>
+        <span>本地浏览器版本 · 3.3.0</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">FLASHNOTE / DESKTOP PREVIEW</div>
+          <h1 id="pageTitle">我的笔记</h1>
+          <div class="window-pill"><i class="dot"></i><span id="systemStatus">功能演示已就绪</span></div>
+        </div>
+        <div class="topbar-note">本页面为可直接打开的 HTML Demo<br />录音与文件预览使用浏览器真实能力</div>
+      </header>
+
+      <div class="workspace">
+        <div class="mode-switch" role="tablist" aria-label="功能切换">
+          <button type="button" class="active" role="tab" aria-selected="true" data-mode="record">实时录音</button>
+          <button type="button" role="tab" aria-selected="false" data-mode="files">本地文件</button>
+        </div>
+
+        <section id="recordView" class="view active" aria-label="实时录音">
+          <div class="record-grid">
+            <article class="card record-card">
+              <div class="card-kicker"><span>新建记录</span><span id="recordDate"></span></div>
+              <h2 class="record-title">Windows 功能演示录音</h2>
+              <div id="recordStatus" class="status-row"><i class="dot"></i><span>准备开始</span></div>
+              <div id="timer" class="timer" aria-live="polite">00:00</div>
+              <div id="wave" class="wave" aria-hidden="true"></div>
+              <div class="control-row">
+                <button id="startBtn" class="primary" type="button"><span>●</span>开始录音</button>
+                <button id="pauseBtn" class="secondary" type="button" disabled><span>Ⅱ</span>暂停</button>
+                <button id="stopBtn" class="ghost" type="button" disabled><span>■</span>结束录音</button>
+              </div>
+              <div id="asrStatus" class="asr-status">麦克风与实时语音识别尚未启动</div>
+              <div class="capture-note">点击开始后，浏览器会请求麦克风权限。语音识别结果会逐句追加到右侧；如果浏览器不支持 Web Speech API，录音仍会保存，但页面会保留真实的未连接状态。</div>
+            </article>
+
+            <div class="side-stack">
+              <article class="card transcript-card">
+                <div class="section-head"><div><h2>实时转写</h2><span id="transcriptCount">等待语音</span></div><button id="copyBtn" class="copy-button" type="button" disabled>复制文本</button></div>
+                <div id="transcriptBox" class="transcript-box" aria-live="polite"><div class="empty">开始说话后，识别内容会显示在这里。</div></div>
+              </article>
+              <article class="card playback-card">
+                <div class="section-head"><h2>录音文件</h2><span id="recordingMeta">尚未生成</span></div>
+                <div id="audioSlot" class="audio-slot">结束录音后可试听</div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section id="filesView" class="view" aria-label="本地文件">
+          <article class="card file-card">
+            <div class="file-intro">
+              <div><h2>本地文件</h2><p>导入本机音频或视频，查看格式、大小，并直接预览媒体内容。</p></div>
+              <button id="chooseBtn" class="primary" type="button">＋ 选择文件</button>
+              <input id="fileInput" class="sr-only" type="file" multiple accept=".mp3,.wav,.m4a,.mp4,.mov,audio/mpeg,audio/wav,audio/mp4,video/mp4,video/quicktime" />
+            </div>
+            <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="选择或拖入文件">
+              <div><div class="drop-icon">↑</div><strong>把文件拖到这里</strong><small>支持 MP3 · WAV · M4A · MP4 · MOV</small></div>
+            </div>
+            <div id="fileNotice" class="notice">文件导入后，转写入口会显示当前处理阶段；本 Demo 不伪造文件 ASR 结果。</div>
+            <div id="fileList" class="file-list"><div class="empty">还没有导入文件。</div></div>
+          </article>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const $ = (selector) => document.querySelector(selector);
+      const supported = new Set(['mp3', 'wav', 'm4a', 'mp4', 'mov']);
+      const state = {
+        recording: false,
+        paused: false,
+        startedAt: 0,
+        elapsedBeforePause: 0,
+        timerId: null,
+        mediaRecorder: null,
+        mediaStream: null,
+        chunks: [],
+        audioUrl: null,
+        recognition: null,
+        recognitionAvailable: false,
+        transcript: [],
+        interim: '',
+        files: [],
+      };
+
+      $('#recordDate').textContent = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' }).format(new Date());
+      for (let i = 0; i < 30; i += 1) {
+        const bar = document.createElement('i');
+        bar.style.height = `${10 + ((i * 17) % 32)}px`;
+        $('#wave').appendChild(bar);
+      }
+
+      const formatTime = (ms) => {
+        const seconds = Math.floor(ms / 1000);
+        return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+      };
+      const elapsed = () => state.elapsedBeforePause + (state.recording && !state.paused ? Date.now() - state.startedAt : 0);
+      const setStatus = (text, live = false) => {
+        const row = $('#recordStatus');
+        row.classList.toggle('recording', live);
+        row.querySelector('span').textContent = text;
+      };
+      const updateTimer = () => { $('#timer').textContent = formatTime(elapsed()); };
+      const updateControls = () => {
+        $('#startBtn').disabled = state.recording;
+        $('#pauseBtn').disabled = !state.recording;
+        $('#stopBtn').disabled = !state.recording;
+        $('#pauseBtn').innerHTML = state.paused ? '<span>▶</span>继续' : '<span>Ⅱ</span>暂停';
+        $('#wave').classList.toggle('recording-live', state.recording && !state.paused);
+      };
+      const setAsrStatus = (text, error = false) => {
+        $('#asrStatus').textContent = text;
+        $('#asrStatus').style.background = error ? '#fff0f0' : '#f4f9f7';
+        $('#asrStatus').style.color = error ? '#8e4d4d' : '#617c78';
+      };
+      const renderTranscript = () => {
+        const box = $('#transcriptBox');
+        const rows = [...state.transcript.map((text) => ({ text, interim: false })), ...(state.interim ? [{ text: state.interim, interim: true }] : [])];
+        box.innerHTML = rows.length ? rows.map((row) => `<div class="line ${row.interim ? 'interim' : ''}">${escapeHtml(row.text)}</div>`).join('') : '<div class="empty">开始说话后，识别内容会显示在这里。</div>';
+        $('#transcriptCount').textContent = rows.length ? `${state.transcript.length} 句已识别` : '等待语音';
+        $('#copyBtn').disabled = state.transcript.length === 0;
+        box.scrollTop = box.scrollHeight;
+      };
+      const escapeHtml = (text) => text.replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+
+      const createRecognition = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return null;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'zh-CN';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (event) => {
+          let interim = '';
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const result = event.results[i];
+            const text = result[0].transcript.trim();
+            if (result.isFinal && text) state.transcript.push(text); else interim += text;
+          }
+          state.interim = interim;
+          renderTranscript();
+        };
+        recognition.onerror = (event) => {
+          if (event.error !== 'aborted' && state.recording) setAsrStatus(`语音识别状态：${event.error}（录音仍在继续）`, true);
+        };
+        recognition.onend = () => {
+          if (state.recording && !state.paused) {
+            try { recognition.start(); } catch (_) { /* browser may already be restarting */ }
+          }
+        };
+        return recognition;
+      };
+
+      const startRecording = async () => {
+        if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+          setAsrStatus('当前浏览器不支持麦克风录音，请使用新版 Edge 或 Chrome。', true);
+          return;
+        }
+        try {
+          state.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          state.mediaRecorder = new MediaRecorder(state.mediaStream);
+          state.chunks = [];
+          state.mediaRecorder.ondataavailable = (event) => { if (event.data.size) state.chunks.push(event.data); };
+          state.mediaRecorder.onstop = finishAudio;
+          state.mediaRecorder.start(250);
+          state.recording = true;
+          state.paused = false;
+          state.startedAt = Date.now();
+          state.elapsedBeforePause = 0;
+          state.timerId = window.setInterval(updateTimer, 250);
+          state.recognition = createRecognition();
+          if (state.recognition) {
+            state.recognitionAvailable = true;
+            try { state.recognition.start(); setAsrStatus('麦克风已连接 · 正在实时识别'); } catch (_) { setAsrStatus('麦克风已连接 · 语音识别等待中', true); }
+          } else {
+            setAsrStatus('麦克风已连接 · 当前浏览器不提供 Web Speech API，录音仍会保存', true);
+          }
+          setStatus('正在录音', true);
+          updateControls();
+          $('#systemStatus').textContent = '正在采集麦克风';
+        } catch (error) {
+          setAsrStatus(`无法访问麦克风：${error.name || '权限被拒绝'}`, true);
+        }
+      };
+
+      const togglePause = () => {
+        if (!state.recording || !state.mediaRecorder) return;
+        if (state.paused) {
+          state.mediaRecorder.resume();
+          state.paused = false;
+          state.startedAt = Date.now();
+          if (state.recognition) { try { state.recognition.start(); } catch (_) {} }
+          setStatus('正在录音', true);
+          setAsrStatus(state.recognitionAvailable ? '麦克风已连接 · 正在实时识别' : '麦克风已连接 · 录音中');
+        } else {
+          state.elapsedBeforePause += Date.now() - state.startedAt;
+          state.mediaRecorder.pause();
+          state.paused = true;
+          state.interim = '';
+          if (state.recognition) { try { state.recognition.stop(); } catch (_) {} }
+          setStatus('已暂停', false);
+          setAsrStatus('录音已暂停 · 语音识别已暂停');
+        }
+        updateTimer(); updateControls(); renderTranscript();
+      };
+
+      const stopRecording = () => {
+        if (!state.recording) return;
+        if (state.paused) state.elapsedBeforePause += Date.now() - state.startedAt;
+        if (state.mediaRecorder?.state !== 'inactive') state.mediaRecorder.stop();
+        if (state.recognition) { try { state.recognition.stop(); } catch (_) {} }
+        state.mediaStream?.getTracks().forEach((track) => track.stop());
+        state.recording = false;
+        state.paused = false;
+        window.clearInterval(state.timerId);
+        state.timerId = null;
+        state.interim = '';
+        setStatus('录音已结束', false);
+        setAsrStatus(state.recognitionAvailable ? '录音已保存 · 转写内容可复制' : '录音已保存 · 当前没有可用的实时识别结果');
+        updateTimer(); updateControls(); renderTranscript();
+        $('#systemStatus').textContent = '功能演示已就绪';
+      };
+
+      const finishAudio = () => {
+        if (!state.chunks.length) return;
+        if (state.audioUrl) URL.revokeObjectURL(state.audioUrl);
+        const blob = new Blob(state.chunks, { type: state.chunks[0].type || 'audio/webm' });
+        state.audioUrl = URL.createObjectURL(blob);
+        $('#audioSlot').innerHTML = `<audio controls src="${state.audioUrl}"></audio>`;
+        $('#recordingMeta').textContent = `${formatTime(elapsed())} · 已保存`;
+      };
+
+      $('#startBtn').addEventListener('click', startRecording);
+      $('#pauseBtn').addEventListener('click', togglePause);
+      $('#stopBtn').addEventListener('click', stopRecording);
+      $('#copyBtn').addEventListener('click', async () => {
+        const text = state.transcript.join('\n');
+        if (!text) return;
+        try { await navigator.clipboard.writeText(text); } catch (_) {
+          const area = document.createElement('textarea'); area.value = text; document.body.appendChild(area); area.select(); document.execCommand('copy'); area.remove();
+        }
+        $('#copyBtn').textContent = '已复制';
+        window.setTimeout(() => { $('#copyBtn').textContent = '复制文本'; }, 1400);
+      });
+
+      const switchMode = (mode) => {
+        document.querySelectorAll('[data-mode]').forEach((button) => {
+          const active = button.dataset.mode === mode;
+          button.classList.toggle('active', active); button.setAttribute('aria-selected', String(active));
+        });
+        $('#recordView').classList.toggle('active', mode === 'record');
+        $('#filesView').classList.toggle('active', mode === 'files');
+        $('#pageTitle').textContent = mode === 'record' ? '我的笔记' : '本地文件';
+      };
+      document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => switchMode(button.dataset.mode)));
+      document.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => {
+        document.querySelectorAll('[data-nav]').forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        if (button.dataset.nav === 'files') switchMode('files'); else if (button.dataset.nav === 'notes') switchMode('record');
+        else { switchMode('record'); $('#systemStatus').textContent = `${button.textContent.trim()} 页面预留`; }
+      }));
+
+      const formatSize = (bytes) => bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+      const addFiles = (fileList) => {
+        const incoming = [...fileList];
+        const rejected = incoming.filter((file) => !supported.has(file.name.split('.').pop().toLowerCase()));
+        if (rejected.length) { $('#fileNotice').classList.add('error'); $('#fileNotice').textContent = '有文件未导入：仅支持 MP3、WAV、M4A、MP4、MOV。'; }
+        else { $('#fileNotice').classList.remove('error'); $('#fileNotice').textContent = '文件已导入。点击播放可在当前页面预览，转写入口会保持真实处理状态。'; }
+        incoming.filter((file) => supported.has(file.name.split('.').pop().toLowerCase())).forEach((file) => {
+          if (!state.files.some((item) => item.file.name === file.name && item.file.size === file.size)) state.files.push({ file, url: URL.createObjectURL(file) });
+        });
+        renderFiles();
+      };
+      const renderFiles = () => {
+        const list = $('#fileList');
+        if (!state.files.length) { list.innerHTML = '<div class="empty">还没有导入文件。</div>'; return; }
+        list.innerHTML = state.files.map((item, index) => {
+          const ext = item.file.name.split('.').pop().toUpperCase();
+          const video = ['MP4', 'MOV'].includes(ext);
+          return `<div class="file-item"><div class="file-type">${video ? '▸' : '♫'}</div><div><div class="file-name" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</div><div class="file-info">${ext} · ${formatSize(item.file.size)} · 已导入</div></div><div class="file-actions"><button type="button" data-preview="${index}">${video ? '预览' : '播放'}</button><button type="button" data-transcribe="${index}">转写</button><button type="button" data-delete="${index}" aria-label="删除 ${escapeHtml(item.file.name)}">删除</button></div><div id="preview-${index}"></div></div>`;
+        }).join('');
+        list.querySelectorAll('[data-preview]').forEach((button) => button.addEventListener('click', () => {
+          const index = Number(button.dataset.preview); const item = state.files[index]; const ext = item.file.name.split('.').pop().toLowerCase(); const host = $(`#preview-${index}`);
+          host.innerHTML = ['mp4', 'mov'].includes(ext) ? `<video class="file-preview" controls src="${item.url}"></video>` : `<audio class="file-preview" controls src="${item.url}"></audio>`;
+        }));
+        list.querySelectorAll('[data-transcribe]').forEach((button) => button.addEventListener('click', () => {
+          $('#fileNotice').classList.remove('error'); $('#fileNotice').textContent = '文件转写：待处理（当前 Demo 未连接文件 ASR 服务）。';
+        }));
+        list.querySelectorAll('[data-delete]').forEach((button) => button.addEventListener('click', () => {
+          const index = Number(button.dataset.delete); URL.revokeObjectURL(state.files[index].url); state.files.splice(index, 1); renderFiles();
+        }));
+      };
+      $('#chooseBtn').addEventListener('click', () => $('#fileInput').click());
+      $('#fileInput').addEventListener('change', (event) => { addFiles(event.target.files); event.target.value = ''; });
+      const dropZone = $('#dropZone');
+      dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('dragging'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+      dropZone.addEventListener('drop', (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); addFiles(event.dataTransfer.files); });
+      dropZone.addEventListener('click', () => $('#fileInput').click());
+      dropZone.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#fileInput').click(); } });
+      updateControls(); renderTranscript();
+    })();
+  </script>
+</body>
+</html>
