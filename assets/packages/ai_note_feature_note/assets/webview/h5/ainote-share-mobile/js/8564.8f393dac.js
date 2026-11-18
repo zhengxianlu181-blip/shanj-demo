@@ -1,0 +1,1 @@
+"use strict";(self["webpackChunk_aimt_ainote_web"]=self["webpackChunk_aimt_ainote_web"]||[]).push([[8564],{28564:function(n,e,t){t.r(e),t.d(e,{default:function(){return s}});var i=function(){var n=this,e=n._self._c;return e("div",[n._v(" ainote-infosharing ")])},u=[],a=t(93483),l={},r=(0,a.Z)(l,i,u,!1,null,null,null),s=r.exports}}]);

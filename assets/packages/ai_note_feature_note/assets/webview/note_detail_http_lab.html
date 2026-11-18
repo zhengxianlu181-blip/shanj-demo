@@ -1,0 +1,1551 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Note Detail Web</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --panel: #ffffff;
+        --surface: #f6f7fb;
+        --surface-strong: #eef3ff;
+        --line: #e8e8e8;
+        --text: #191919;
+        --muted: #666666;
+        --muted-soft: #999999;
+        --accent: #4f7afa;
+        --accent-soft: #eef3ff;
+        --accent-strong: #1a1a1a;
+        --mark: #ff9f0a;
+        --shadow: 0 8px 22px rgba(17, 24, 39, 0.06);
+        --radius-xl: 20px;
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "PingFang SC", "Avenir Next", "SF Pro Display", sans-serif;
+      }
+
+      body {
+        padding: 0;
+      }
+
+      .shell {
+        min-height: 100vh;
+        background: #fff;
+      }
+
+      .header,
+      .audio-wrap,
+      .tab-wrap,
+      .tab-pane,
+      .resource-wrap {
+        width: 100%;
+        max-width: 960px;
+        margin: 0 auto;
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .header {
+        padding-top: 8px;
+        padding-bottom: 10px;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.25;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 8px;
+        color: var(--muted-soft);
+        font-size: 12px;
+      }
+
+      .meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .action-chip,
+      .action-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 12px;
+        border: 1px solid transparent;
+      }
+
+      .action-button {
+        cursor: pointer;
+      }
+
+      .action-chip--accent {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .error-banner {
+        display: none;
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        border: 1px solid #ffd5c5;
+        background: #fff4ef;
+        color: #cc4e22;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .error-banner.is-visible {
+        display: block;
+      }
+
+      .audio-wrap {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(12px);
+        padding-top: 6px;
+        padding-bottom: 6px;
+        border-top: 1px solid #f3f3f3;
+        border-bottom: 1px solid #f1f1f1;
+      }
+
+      .audio-bar {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+      }
+
+      .play-button {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid #cccccc;
+        background: #fff;
+        color: #333333;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .timeline-box {
+        position: relative;
+        min-width: 0;
+      }
+
+      .seek {
+        width: 100%;
+        margin: 0;
+        accent-color: var(--accent);
+      }
+
+      .markers {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 14px;
+        pointer-events: none;
+      }
+
+      .marker-seam,
+      .marker-focus {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .marker-seam {
+        width: 2px;
+        height: 10px;
+        border-radius: 1px;
+        background: var(--accent);
+      }
+
+      .marker-focus {
+        font-size: 11px;
+        color: var(--mark);
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        pointer-events: auto;
+        padding: 0;
+      }
+
+      .duration-text {
+        font-size: 11px;
+        color: #333333;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .speed-button {
+        border: 0;
+        background: transparent;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .tab-wrap {
+        padding-top: 0;
+        padding-bottom: 8px;
+      }
+
+      .tab-bar {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+      }
+
+      .tab-button {
+        flex: 0 0 auto;
+        min-height: 32px;
+        padding: 0 10px;
+        border-radius: 20px;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .tab-button-inner {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .tab-button.is-active {
+        background: var(--accent-strong);
+        color: #fff;
+      }
+
+      .tab-pane {
+        display: none;
+        padding-top: 8px;
+        padding-bottom: 18px;
+      }
+
+      .tab-content {
+        touch-action: pan-y;
+      }
+
+      .tab-pane.is-active {
+        display: block;
+      }
+
+      .pane-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 220px;
+        color: var(--muted-soft);
+        font-size: 14px;
+      }
+
+      .note-page-head {
+        padding: 10px 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .note-page-viewer {
+        position: relative;
+      }
+
+      .page-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 8px;
+      }
+
+      .page-nav-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .page-nav-button {
+        min-width: 36px;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: 10px;
+        border: 1px solid #ebebeb;
+        background: #fff;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .page-nav-button:disabled {
+        color: #c4c4c4;
+        cursor: default;
+      }
+
+      .page-frame {
+        width: 100%;
+        border: 1px solid #eeeeee;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #f5f5f5;
+      }
+
+      .page-frame img {
+        display: block;
+        width: 100%;
+        object-fit: contain;
+        background: #f5f5f5;
+      }
+
+      .page-thumbs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        margin-top: 12px;
+      }
+
+      .page-thumb {
+        flex: 0 0 86px;
+        padding: 4px;
+        border-radius: 10px;
+        border: 1px solid #eaeaea;
+        background: #fff;
+        cursor: pointer;
+      }
+
+      .page-thumb.is-active {
+        border-color: #c6d6ff;
+        background: #f7faff;
+      }
+
+      .page-thumb img {
+        width: 100%;
+        height: 64px;
+        object-fit: cover;
+        border-radius: 6px;
+        display: block;
+        background: #f3f3f3;
+      }
+
+      .page-thumb-label {
+        margin-top: 6px;
+        text-align: center;
+        font-size: 11px;
+        color: var(--muted-soft);
+      }
+
+      .list-pane {
+        display: grid;
+        gap: 18px;
+      }
+
+      .transcript-row,
+      .agenda-row,
+      .outline-row {
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .time-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .row-title {
+        margin-top: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.5;
+      }
+
+      .row-body {
+        margin-top: 8px;
+        font-size: 14px;
+        line-height: 1.8;
+        color: var(--text);
+        white-space: pre-wrap;
+      }
+
+      .doc-block {
+        margin-top: 12px;
+      }
+
+      .doc-note {
+        margin: 8px 0 18px;
+        font-size: 12px;
+        color: var(--muted-soft);
+      }
+
+      .doc-center-title {
+        text-align: center;
+        font-size: 22px;
+        line-height: 1.4;
+        font-weight: 700;
+        margin: 8px 0 10px;
+      }
+
+      .doc-center-date {
+        text-align: center;
+        font-size: 14px;
+        color: #4a4a4a;
+        margin-bottom: 18px;
+      }
+
+      .doc-heading {
+        margin: 14px 0 8px;
+        font-size: 18px;
+        line-height: 1.5;
+        font-weight: 700;
+      }
+
+      .doc-card {
+        margin: 8px 0 16px;
+        padding: 16px 20px;
+        border-radius: 18px;
+        background: #f6f7f9;
+      }
+
+      .doc-paragraph {
+        margin: 8px 0;
+        font-size: 14px;
+        line-height: 1.85;
+        color: var(--text);
+        white-space: pre-wrap;
+      }
+
+      .doc-bullet {
+        display: flex;
+        gap: 8px;
+        margin: 8px 0;
+        font-size: 14px;
+        line-height: 1.85;
+        color: var(--text);
+      }
+
+      .doc-bullet-mark {
+        flex: 0 0 auto;
+        font-weight: 700;
+      }
+
+      .doc-highlight {
+        display: inline;
+        padding: 0 3px;
+        border-radius: 3px;
+        background: #fff1b8;
+      }
+
+      .doc-image {
+        display: block;
+        width: 100%;
+        margin: 12px 0;
+        border-radius: 14px;
+        border: 1px solid #eeeeee;
+        background: #f7f7f7;
+      }
+
+      .row-translation {
+        margin-top: 8px;
+        font-size: 14px;
+        line-height: 1.8;
+        color: var(--accent);
+        white-space: pre-wrap;
+      }
+
+      .row-divider {
+        margin-top: 18px;
+        border-top: 1px solid #f1f1f1;
+      }
+
+      .agenda-image {
+        display: block;
+        width: 100%;
+        margin-top: 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid #eeeeee;
+        background: #f7f7f7;
+      }
+
+      .markdown-pane {
+        min-height: 220px;
+        font-size: 14px;
+        line-height: 1.85;
+        color: var(--text);
+        white-space: pre-wrap;
+      }
+
+      .insight-banner {
+        margin-bottom: 12px;
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        background: #f6f7fb;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .outline-row {
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        background: #fff;
+        border: 1px solid #f0f0f0;
+      }
+
+      .outline-row + .outline-row {
+        margin-top: 10px;
+      }
+
+      .outline-meta {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--muted-soft);
+      }
+
+      .resource-wrap {
+        padding-top: 8px;
+        padding-bottom: 24px;
+      }
+
+      .tab-tip {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--muted-soft);
+      }
+
+      .resource-title {
+        margin: 0 0 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .resource-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+      }
+
+      .resource-card {
+        display: block;
+        padding: 14px;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid #ececec;
+        border-radius: var(--radius-md);
+        background: #fff;
+      }
+
+      .resource-card strong {
+        display: block;
+        font-size: 14px;
+        color: var(--text);
+      }
+
+      .resource-card span {
+        display: block;
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted-soft);
+      }
+
+      @media (max-width: 720px) {
+        .audio-bar {
+          grid-template-columns: 34px minmax(0, 1fr) auto;
+        }
+
+        .speed-button {
+          grid-column: 1 / -1;
+          justify-self: end;
+        }
+      }
+    </style>
+    <script>
+      window.__LOCAL_BASE_URL = '__LOCAL_BASE_URL__';
+    </script>
+  </head>
+  <body>
+    <div class="shell">
+      <section class="header">
+        <h1 class="title" id="title">加载中...</h1>
+        <div class="meta-row" id="metaRow"></div>
+        <div class="header-actions" id="headerActions"></div>
+        <div class="error-banner" id="errorBanner"></div>
+      </section>
+
+      <section class="audio-wrap">
+        <div class="audio-bar">
+          <button class="play-button" id="playButton" type="button">▶</button>
+          <div class="timeline-box">
+            <input class="seek" id="seekInput" type="range" min="0" max="1" step="0.001" value="0" />
+            <div class="markers" id="markers"></div>
+          </div>
+          <div class="duration-text" id="durationText">00:00/00:00</div>
+          <button class="speed-button" id="speedButton" type="button">1x</button>
+        </div>
+        <audio id="audioPlayer" preload="none"></audio>
+      </section>
+
+      <section class="tab-wrap">
+        <div class="tab-bar" id="tabBar"></div>
+      </section>
+
+      <div class="tab-content" id="tabContent">
+        <section class="tab-pane is-active" data-tab="note">
+          <div class="page-nav">
+            <div class="note-page-head" id="notePageHead">页面：0/0</div>
+            <div class="page-nav-actions">
+              <button class="page-nav-button" id="prevPageButton" type="button">‹</button>
+              <button class="page-nav-button" id="nextPageButton" type="button">›</button>
+            </div>
+          </div>
+          <div class="note-page-viewer">
+            <div class="page-frame" id="pageFrame"></div>
+            <div class="page-thumbs" id="pageThumbs"></div>
+          </div>
+        </section>
+
+        <section class="tab-pane" data-tab="transcript">
+          <div class="tab-tip">展示态还原原文阅读区，不支持编辑。</div>
+          <div class="list-pane" id="transcriptPane"></div>
+        </section>
+
+        <section class="tab-pane" data-tab="agenda">
+          <div class="tab-tip">展示态还原 AI 笔记排版，不支持编辑。</div>
+          <div class="list-pane" id="agendaPane"></div>
+        </section>
+
+        <section class="tab-pane" data-tab="summary">
+          <div class="tab-tip">展示态还原 AI 纪要内容，不支持编辑。</div>
+          <div class="markdown-pane" id="summaryPane"></div>
+        </section>
+
+        <section class="tab-pane" data-tab="insight">
+          <div class="insight-banner">AI 洞察仅做展示，不支持编辑。</div>
+          <div class="markdown-pane" id="insightPane"></div>
+        </section>
+
+        <section class="tab-pane" data-tab="outline">
+          <div id="outlinePane"></div>
+        </section>
+      </div>
+
+      <section class="resource-wrap">
+        <div class="resource-title">本地 HTTP 资源</div>
+        <div class="resource-grid" id="resourcePane"></div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var tabs = [
+          { key: 'note', label: '笔记', icon: '▣' },
+          { key: 'transcript', label: '原文', icon: '◉' },
+          { key: 'agenda', label: 'AI笔记', icon: '☰' },
+          { key: 'summary', label: 'AI纪要', icon: '✦' },
+          { key: 'insight', label: 'AI洞察', icon: '◎' },
+          { key: 'outline', label: '大纲', icon: '≡' }
+        ];
+
+        var speeds = [1, 1.5, 2];
+
+        var state = {
+          detail: null,
+          activeTab: 'note',
+          activeAudioIndex: 0,
+          activePageIndex: 0,
+          speedIndex: 0,
+          audioError: '',
+          audioStatus: 'idle',
+          currentGlobalMs: 0,
+          pendingSeekMs: null,
+          resumeAfterLoad: false,
+          isScrubbing: false,
+          wasPlayingBeforeScrub: false
+        };
+
+        var titleEl = document.getElementById('title');
+        var metaRowEl = document.getElementById('metaRow');
+        var headerActionsEl = document.getElementById('headerActions');
+        var errorBannerEl = document.getElementById('errorBanner');
+        var playButtonEl = document.getElementById('playButton');
+        var seekInputEl = document.getElementById('seekInput');
+        var markersEl = document.getElementById('markers');
+        var durationTextEl = document.getElementById('durationText');
+        var speedButtonEl = document.getElementById('speedButton');
+        var audioPlayerEl = document.getElementById('audioPlayer');
+        var tabBarEl = document.getElementById('tabBar');
+        var tabContentEl = document.getElementById('tabContent');
+        var notePageHeadEl = document.getElementById('notePageHead');
+        var prevPageButtonEl = document.getElementById('prevPageButton');
+        var nextPageButtonEl = document.getElementById('nextPageButton');
+        var pageFrameEl = document.getElementById('pageFrame');
+        var pageThumbsEl = document.getElementById('pageThumbs');
+        var transcriptPaneEl = document.getElementById('transcriptPane');
+        var agendaPaneEl = document.getElementById('agendaPane');
+        var summaryPaneEl = document.getElementById('summaryPane');
+        var insightPaneEl = document.getElementById('insightPane');
+        var outlinePaneEl = document.getElementById('outlinePane');
+        var resourcePaneEl = document.getElementById('resourcePane');
+
+        function escapeHtml(value) {
+          return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
+
+        function emptyPane(message) {
+          return '<div class="pane-empty">' + escapeHtml(message) + '</div>';
+        }
+
+        function withBaseUrl(path) {
+          if (!path) {
+            return '';
+          }
+          if (/^https?:\/\//i.test(path)) {
+            return path;
+          }
+          var base = String(window.__LOCAL_BASE_URL || '').replace(/\/$/, '');
+          if (!base) {
+            return path;
+          }
+          if (path.charAt(0) === '/') {
+            return base + path;
+          }
+          return base + '/' + path;
+        }
+
+        function formatDuration(ms) {
+          var total = Math.max(0, Number(ms || 0));
+          var hours = Math.floor(total / 3600000);
+          var minutes = Math.floor((total % 3600000) / 60000);
+          var seconds = Math.floor((total % 60000) / 1000);
+          if (hours > 0) {
+            return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+          }
+          return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+        }
+
+        function renderTabs() {
+          tabBarEl.innerHTML = tabs.map(function (tab) {
+            var active = tab.key === state.activeTab;
+            return '<button class="tab-button' + (active ? ' is-active' : '') + '" data-tab="' + tab.key + '" type="button">' +
+              '<span class="tab-button-inner">' +
+                '<span>' + escapeHtml(tab.icon) + '</span>' +
+                (active ? '<span>' + escapeHtml(tab.label) + '</span>' : '') +
+              '</span>' +
+            '</button>';
+          }).join('');
+
+          Array.prototype.forEach.call(document.querySelectorAll('.tab-pane'), function (pane) {
+            pane.classList.toggle('is-active', pane.getAttribute('data-tab') === state.activeTab);
+          });
+        }
+
+        function goToAdjacentTab(delta) {
+          var index = tabs.findIndex(function (tab) {
+            return tab.key === state.activeTab;
+          });
+          if (index < 0) {
+            return;
+          }
+          var nextIndex = Math.max(0, Math.min(tabs.length - 1, index + delta));
+          if (nextIndex === index) {
+            return;
+          }
+          state.activeTab = tabs[nextIndex].key;
+          renderTabs();
+        }
+
+        function renderHeader() {
+          var note = state.detail.note || {};
+          titleEl.textContent = note.title || '未命名笔记';
+
+          metaRowEl.innerHTML = [
+            '<span class="meta-item">⏱ ' + escapeHtml(note.createdAt || '--') + '</span>',
+            '<span class="meta-item">📁 ' + escapeHtml(note.groupName || '') + '</span>'
+          ].join('');
+
+          var actions = [
+            '<span class="action-chip">本地详情</span>',
+            '<span class="action-chip action-chip--accent">HTTP Web</span>',
+            '<button class="action-button" data-header-action="refresh" type="button">刷新本地数据</button>',
+            '<a class="action-button" href="' + withBaseUrl('/files/detail.json') + '">导出 JSON</a>'
+          ];
+          if (note.isPinned) {
+            actions.push('<span class="action-chip">已置顶</span>');
+          }
+          if (note.isEncrypted) {
+            actions.push('<span class="action-chip">已加密</span>');
+          }
+          if (note.hasAudio) {
+            actions.push('<span class="action-chip">含音频</span>');
+          }
+          headerActionsEl.innerHTML = actions.join('');
+
+          errorBannerEl.classList.remove('is-visible');
+          errorBannerEl.textContent = '';
+        }
+
+        function renderAudio() {
+          var playback = state.detail.playback || {};
+          var audios = state.detail.sections.audio || [];
+          var totalDurationMs = Number(playback.totalDurationMs || totalDurationFromTracks(audios) || 1);
+          seekInputEl.max = String(Math.max(1, totalDurationMs));
+          speedButtonEl.textContent = String(speeds[state.speedIndex]) + 'x';
+          renderMarkers(playback);
+          syncAudioUI();
+        }
+
+        function getAudioSegments() {
+          if (!state.detail || !state.detail.sections || !state.detail.sections.audio) {
+            return [];
+          }
+
+          var offsetMs = 0;
+          return state.detail.sections.audio.map(function (item, index) {
+            var absoluteDurationMs = Number(item.alignmentDurationMs || item.durationMs || 0);
+            var playableDurationMs = Number(item.durationMs || item.alignmentDurationMs || 0);
+            var segment = {
+              index: index,
+              startMs: offsetMs,
+              endMs: offsetMs + Math.max(0, absoluteDurationMs),
+              durationMs: Math.max(0, playableDurationMs),
+              absoluteDurationMs: Math.max(0, absoluteDurationMs),
+              streamUrl: withBaseUrl(item.streamUrl),
+              raw: item
+            };
+            offsetMs += Math.max(0, absoluteDurationMs);
+            return segment;
+          });
+        }
+
+        function totalDurationFromTracks(audios) {
+          return (audios || []).reduce(function (sum, item) {
+            return sum + Number(item.alignmentDurationMs || item.durationMs || 0);
+          }, 0);
+        }
+
+        function findSegmentForGlobalMs(globalMs) {
+          var segments = getAudioSegments();
+          if (!segments.length) {
+            return null;
+          }
+
+          var target = Math.max(0, Number(globalMs || 0));
+          for (var i = 0; i < segments.length; i += 1) {
+            var segment = segments[i];
+            if (target < segment.endMs || i === segments.length - 1) {
+              return segment;
+            }
+          }
+          return segments[0];
+        }
+
+        function ensureAudioAtGlobalMs(globalMs, autoplay) {
+          var target = resolveSeekTarget(globalMs);
+          var segment = target ? target.segment : null;
+          if (!segment) {
+            return;
+          }
+
+          state.activeAudioIndex = segment.index;
+          state.pendingSeekMs = target.localMs;
+          state.resumeAfterLoad = !!autoplay;
+          state.audioError = '';
+
+          if (audioPlayerEl.getAttribute('src') !== segment.streamUrl) {
+            state.audioStatus = 'loading';
+            audioPlayerEl.src = segment.streamUrl;
+            audioPlayerEl.load();
+          } else {
+            applyPendingSeek();
+            resumePlaybackIfNeeded();
+          }
+          syncAudioUI();
+        }
+
+        function resumePlaybackIfNeeded() {
+          if (!state.resumeAfterLoad) {
+            return;
+          }
+
+          var shouldResume = true;
+          if (!audioPlayerEl.getAttribute('src')) {
+            shouldResume = false;
+          }
+
+          if (shouldResume) {
+            state.audioStatus = 'playing';
+            audioPlayerEl.play().then(function () {
+              state.resumeAfterLoad = false;
+              syncAudioUI();
+            }).catch(function () {
+              state.audioStatus = 'paused';
+              syncAudioUI();
+            });
+          }
+        }
+
+        function applyPendingSeek() {
+          if (state.pendingSeekMs == null) {
+            return;
+          }
+
+          try {
+            audioPlayerEl.currentTime = Math.max(0, Number(state.pendingSeekMs || 0)) / 1000;
+          } catch (_) {}
+          state.pendingSeekMs = null;
+        }
+
+        function resolveSeekTarget(globalMs) {
+          var segments = getAudioSegments();
+          if (!segments.length) {
+            return null;
+          }
+
+          var targetMs = Math.max(0, Number(globalMs || 0));
+          for (var i = 0; i < segments.length; i += 1) {
+            var segment = segments[i];
+            if (targetMs >= segment.startMs && targetMs <= segment.endMs) {
+              var localMs = Math.min(
+                segment.durationMs,
+                Math.max(0, targetMs - segment.startMs)
+              );
+              return {
+                segment: segment,
+                localMs: localMs
+              };
+            }
+          }
+
+          var lastSegment = segments[segments.length - 1];
+          return {
+            segment: lastSegment,
+            localMs: lastSegment.durationMs
+          };
+        }
+
+        function renderMarkers(playback) {
+          var totalMs = Math.max(1, Number(playback.totalDurationMs || 1));
+          var html = [];
+
+          (playback.seamPoints || []).forEach(function (point) {
+            var left = Math.max(0, Math.min(100, point * 100 / totalMs));
+            html.push('<span class="marker-seam" style="left:' + left + '%"></span>');
+          });
+
+          (playback.focusMarkPoints || []).forEach(function (point) {
+            var left = Math.max(0, Math.min(100, point * 100 / totalMs));
+            html.push('<button class="marker-focus" data-marker-ms="' + point + '" style="left:' + left + '%" type="button">★</button>');
+          });
+
+          markersEl.innerHTML = html.join('');
+        }
+
+        function syncAudioUI() {
+          var segments = getAudioSegments();
+          var activeSegment = segments[state.activeAudioIndex] || null;
+          var segmentOffset = activeSegment ? activeSegment.startMs : 0;
+          var localCurrent = Number(audioPlayerEl.currentTime || 0) * 1000;
+          var totalDuration = Number(seekInputEl.max || 1);
+
+          if (state.isScrubbing) {
+            // Keep the thumb under the user's finger while scrubbing.
+          } else if (state.audioStatus === 'seeking' && state.pendingSeekMs != null && activeSegment) {
+            state.currentGlobalMs = activeSegment.startMs + Number(state.pendingSeekMs || 0);
+          } else {
+            state.currentGlobalMs = Math.min(totalDuration, Math.max(0, segmentOffset + localCurrent));
+          }
+
+          seekInputEl.value = String(state.currentGlobalMs);
+
+          var suffix = '';
+          if (state.audioError) {
+            suffix = ' · 音频异常';
+          } else if (state.audioStatus === 'loading') {
+            suffix = ' · 加载中';
+          } else if (state.audioStatus === 'buffering') {
+            suffix = ' · 缓冲中';
+          }
+
+          durationTextEl.textContent =
+            formatDuration(state.currentGlobalMs) + '/' + formatDuration(totalDuration) + suffix;
+
+          if (state.audioStatus === 'loading' || state.audioStatus === 'buffering') {
+            playButtonEl.textContent = '…';
+          } else {
+            playButtonEl.textContent = audioPlayerEl.paused ? '▶' : '❚❚';
+          }
+        }
+
+        function renderNotePane() {
+          var pages = state.detail.sections.pages || [];
+
+          if (!pages.length) {
+            notePageHeadEl.textContent = '页面：0/0';
+            pageFrameEl.innerHTML = emptyPane('暂无页面内容');
+            pageThumbsEl.innerHTML = '';
+            return;
+          }
+
+          state.activePageIndex = Math.max(0, Math.min(state.activePageIndex, pages.length - 1));
+          var active = pages[state.activePageIndex];
+          notePageHeadEl.textContent = '页面：' + String(state.activePageIndex + 1) + '/' + String(pages.length);
+          prevPageButtonEl.disabled = state.activePageIndex <= 0;
+          nextPageButtonEl.disabled = state.activePageIndex >= pages.length - 1;
+          pageFrameEl.innerHTML = '<img src="' + encodeURI(withBaseUrl(active.previewUrl || '')) + '" alt="page" />';
+          pageThumbsEl.innerHTML = pages.map(function (item, index) {
+            return '<button class="page-thumb' + (index === state.activePageIndex ? ' is-active' : '') + '" data-page-index="' + index + '" type="button">' +
+              '<img src="' + encodeURI(withBaseUrl(item.previewUrl || '')) + '" alt="page thumb" />' +
+              '<div class="page-thumb-label">第 ' + escapeHtml(String(index + 1)) + ' 页</div>' +
+            '</button>';
+          }).join('');
+        }
+
+        function renderTranscriptPane() {
+          var rows = state.detail.sections.transcript || [];
+          transcriptPaneEl.innerHTML = rows.length
+            ? rows.map(function (item) {
+                return '<article class="transcript-row">' +
+                  '<div class="time-pill">' + escapeHtml(item.timeLabel || '00:00') + '</div>' +
+                  '<div class="row-title">' + escapeHtml(item.speaker || '说话人') + '</div>' +
+                  '<div class="row-body">' + escapeHtml(item.text || '') + '</div>' +
+                  (item.translate ? '<div class="row-translation">' + escapeHtml(item.translate) + '</div>' : '') +
+                  '<div class="row-divider"></div>' +
+                '</article>';
+              }).join('')
+            : emptyPane('暂无原文内容');
+        }
+
+        function renderAgendaPane() {
+          var rows = state.detail.sections.agenda || [];
+          agendaPaneEl.innerHTML = rows.length
+            ? rows.map(function (item) {
+                return '<article class="agenda-row">' +
+                  '<div class="time-pill">' + escapeHtml(item.timeLabel || '00:00') + '</div>' +
+                  '<div class="row-body">' + renderRichText(item.content || '') + '</div>' +
+                  (item.imageUrl ? '<img class="agenda-image" src="' + encodeURI(withBaseUrl(item.imageUrl)) + '" alt="agenda image" />' : '') +
+                  '<div class="row-divider"></div>' +
+                '</article>';
+              }).join('')
+            : emptyPane('暂无 AI 笔记内容');
+        }
+
+        function renderSummaryPane() {
+          var text = state.detail.sections.summaryMarkdown || '';
+          summaryPaneEl.innerHTML = text ? renderDocumentView(text, { centered: true, cardMode: true }) : '暂无 AI 纪要内容';
+        }
+
+        function renderInsightPane() {
+          var text = state.detail.sections.insightMarkdown || '';
+          insightPaneEl.innerHTML = text ? renderDocumentView(text, { centered: true, cardMode: false }) : '暂无 AI 洞察内容';
+        }
+
+        function renderOutlinePane() {
+          var pages = state.detail.sections.pages || [];
+          var transcript = state.detail.sections.transcript || [];
+          var agenda = state.detail.sections.agenda || [];
+          var rows = [
+            { title: '笔记页面', meta: String(pages.length) + ' 页' },
+            { title: '原文转写', meta: String(transcript.length) + ' 段' },
+            { title: 'AI笔记', meta: String(agenda.length) + ' 条' }
+          ];
+
+          agenda.slice(0, 8).forEach(function (item) {
+            rows.push({
+              title: item.content || ('片段 #' + String(item.seq || 0)),
+              meta: item.timeLabel || '--'
+            });
+          });
+
+          outlinePaneEl.innerHTML = rows.length
+            ? rows.map(function (item) {
+                return '<article class="outline-row">' +
+                  '<div class="row-title">' + escapeHtml(item.title) + '</div>' +
+                  '<div class="outline-meta">' + escapeHtml(item.meta) + '</div>' +
+                '</article>';
+              }).join('')
+            : emptyPane('暂无大纲内容');
+        }
+
+        function renderResources() {
+          var pages = state.detail.sections.pages || [];
+          var items = [
+            { title: 'Transcript', href: '/files/transcript.txt', note: '原文文本导出' },
+            { title: 'Summary', href: '/files/summary.md', note: 'AI 纪要导出' },
+            { title: 'Insight', href: '/files/insight.md', note: 'AI 洞察导出' },
+            { title: 'Detail JSON', href: '/files/detail.json', note: '详情数据快照' },
+            { title: '1 MB Blob', href: '/files/blob.bin?kb=1024', note: '大文件流测试' }
+          ];
+
+          pages.forEach(function (item, index) {
+            items.push({
+              title: 'Page ' + String(index + 1),
+              href: item.downloadUrl || item.previewUrl,
+              note: '页面资源下载'
+            });
+          });
+
+          resourcePaneEl.innerHTML = items.map(function (item) {
+            return '<a class="resource-card" href="' + encodeURI(withBaseUrl(item.href)) + '">' +
+              '<strong>' + escapeHtml(item.title) + '</strong>' +
+              '<span>' + escapeHtml(item.note) + '</span>' +
+            '</a>';
+          }).join('');
+        }
+
+        function renderMarkdownBlocks(text, options) {
+          options = options || {};
+          var normalizedText = normalizeDisplayContent(text || '');
+          var lines = normalizedText.split(/\n+/);
+          var html = [];
+          var centeredTitleDone = false;
+          var centeredDateDone = false;
+
+          lines.forEach(function (line) {
+            var trimmed = line.trim();
+            if (!trimmed) {
+              return;
+            }
+
+            var image = tryParseImageLine(trimmed);
+            if (image) {
+              html.push('<img class="doc-image" src="' + encodeURI(withBaseUrl(image.url)) + '" alt="' + escapeHtml(image.alt) + '" />');
+              return;
+            }
+
+            if (options.centered && !centeredTitleDone && !/^[-*]\s+/.test(trimmed) && !/^#{1,6}\s+/.test(trimmed) && trimmed.length <= 40) {
+              centeredTitleDone = true;
+              html.push('<div class="doc-center-title">' + renderInlineMarkup(trimmed) + '</div>');
+              return;
+            }
+
+            if (options.centered && centeredTitleDone && !centeredDateDone && /\d{4}年\d{2}月\d{2}日/.test(trimmed)) {
+              centeredDateDone = true;
+              html.push('<div class="doc-center-date">' + renderInlineMarkup(trimmed) + '</div>');
+              return;
+            }
+
+            if (/^#{1,6}\s+/.test(trimmed)) {
+              html.push('<div class="doc-heading">' + renderInlineMarkup(trimmed.replace(/^#{1,6}\s+/, '')) + '</div>');
+              return;
+            }
+
+            if (/^[-*]\s+/.test(trimmed)) {
+              html.push('<div class="doc-bullet"><span class="doc-bullet-mark">•</span><span>' + renderInlineMarkup(trimmed.replace(/^[-*]\s+/, '')) + '</span></div>');
+              return;
+            }
+
+            html.push('<div class="doc-paragraph">' + renderInlineMarkup(trimmed) + '</div>');
+          });
+
+          return html.join('');
+        }
+
+        function renderDocumentView(text, options) {
+          options = options || {};
+          var body = renderMarkdownBlocks(text, options);
+          var note = '<div class="doc-note">以下内容由AI生成</div>';
+          if (options.cardMode) {
+            body = wrapCardSections(body);
+          }
+          return note + body;
+        }
+
+        function wrapCardSections(html) {
+          return html
+            .replace(/(<div class="doc-heading">[\s\S]*?<\/div>)([\s\S]*?)(?=(<div class="doc-heading">)|$)/g, function (_, heading, content) {
+              return heading + '<div class="doc-card">' + content + '</div>';
+            });
+        }
+
+        function renderRichText(text) {
+          return renderMarkdownBlocks(text || '');
+        }
+
+        function normalizeDisplayContent(source) {
+          var content = String(source || '');
+          for (var i = 0; i < 2; i += 1) {
+            var decoded = content
+              .replace(/\\r\\n/g, '\n')
+              .replace(/\\n/g, '\n')
+              .replace(/\\r/g, '\n')
+              .replace(/\\t/g, '  ')
+              .replace(/\\\//g, '/')
+              .replace(/\\u003c/g, '<')
+              .replace(/\\u003e/g, '>')
+              .replace(/\\u0026/g, '&');
+            if (decoded === content) {
+              break;
+            }
+            content = decoded;
+          }
+          content = content.replace(/\r\n/g, '\n');
+          content = content.replace(/\[\[mark\]\]/g, '');
+          content = content.replace(/<br\s*\/?>/gi, '\n');
+          content = content.replace(/<(b|strong)>([\s\S]*?)<\/\1>/gi, '$2');
+          content = content.replace(/<(i|em)>([\s\S]*?)<\/\1>/gi, '$2');
+          content = content.replace(/<u>([\s\S]*?)<\/u>/gi, '$1');
+          content = content.replace(/<(s|strike|del)>([\s\S]*?)<\/\1>/gi, '$2');
+          content = content.replace(/<mark>([\s\S]*?)<\/mark>/gi, '==$1==');
+          content = content.replace(/<span[^>]*style="[^"]*background[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, '==$1==');
+          content = content.replace(/<(center|details|rounded|todo)>([\s\S]*?)<\/\1>/gi, '$2');
+          content = content.replace(/<(div|section|p)([^>]*style="[^"]*background[^"]*"[^>]*)>([\s\S]*?)<\/\1>/gi, '\n$3\n');
+          content = content.replace(/<\/?(div|section|p)\b[^>]*>/gi, '\n');
+          content = content.replace(/<[^>]+>/g, '');
+          content = content.replace(/\n{3,}/g, '\n\n');
+          return content.trim();
+        }
+
+        function tryParseImageLine(text) {
+          var markdownImageMatch = /^!\[(.*?)\]\((https?:\/\/[^\s)]+)\)$/i.exec(text);
+          if (markdownImageMatch) {
+            return { alt: markdownImageMatch[1] || '', url: markdownImageMatch[2] };
+          }
+
+          if (/^https?:\/\/\S+\.(png|jpe?g|gif|webp|bmp|svg)(\?\S*)?$/i.test(text)) {
+            return { alt: '', url: text };
+          }
+
+          return null;
+        }
+
+        function renderInlineMarkup(text) {
+          var rendered = escapeHtml(text);
+          rendered = rendered.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+          rendered = rendered.replace(/==([^=]+)==/g, '<span class="doc-highlight">$1</span>');
+          rendered = rendered.replace(/~~([^~]+)~~/g, '<span style="text-decoration:line-through">$1</span>');
+          return applyKeywordHighlightToHtml(rendered);
+        }
+
+        function applyKeywordHighlightToHtml(html) {
+          return String(html).replace(/(^|>)([^<>]+)(?=<|$)/g, function (_, prefix, textPart) {
+            var highlighted = textPart.replace(/(\d{4}年|\d+\.\d+%|\d+万|\d+月份|孔子|孟子)/g, '<span class="doc-highlight">$1</span>');
+            return prefix + highlighted;
+          });
+        }
+
+        function renderAll() {
+          renderTabs();
+          renderHeader();
+          renderAudio();
+          renderNotePane();
+          renderTranscriptPane();
+          renderAgendaPane();
+          renderSummaryPane();
+          renderInsightPane();
+          renderOutlinePane();
+          renderResources();
+        }
+
+        async function loadDetail(refresh) {
+          try {
+            var requestUrl = withBaseUrl('/api/detail' + (refresh ? '?refresh=1' : ''));
+            var response = await fetch(requestUrl, {
+              cache: 'no-store',
+              headers: {
+                'Accept': 'application/json'
+              }
+            });
+            var text = await response.text();
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status + ': ' + text);
+            }
+            if (/^\s*</.test(text)) {
+              throw new Error('Expected JSON from ' + requestUrl + ', but got HTML');
+            }
+            state.detail = JSON.parse(text);
+            state.activeAudioIndex = 0;
+            state.activePageIndex = 0;
+            state.audioError = '';
+            state.audioStatus = 'idle';
+            state.currentGlobalMs = 0;
+            state.pendingSeekMs = null;
+            state.resumeAfterLoad = false;
+            renderAll();
+          } catch (error) {
+            titleEl.textContent = '本地详情加载失败';
+            metaRowEl.innerHTML = '';
+            headerActionsEl.innerHTML = '';
+            errorBannerEl.classList.add('is-visible');
+            errorBannerEl.textContent = String(error && error.message ? error.message : error);
+            pageFrameEl.innerHTML = emptyPane('没有可展示的本地页面');
+            pageThumbsEl.innerHTML = '';
+            transcriptPaneEl.innerHTML = emptyPane('没有可展示的原文');
+            agendaPaneEl.innerHTML = emptyPane('没有可展示的 AI 笔记');
+            summaryPaneEl.textContent = '';
+            insightPaneEl.textContent = '';
+            outlinePaneEl.innerHTML = emptyPane('没有可展示的大纲');
+            resourcePaneEl.innerHTML = '';
+          }
+        }
+
+        tabBarEl.addEventListener('click', function (event) {
+          var button = event.target.closest('[data-tab]');
+          if (!button) {
+            return;
+          }
+          state.activeTab = button.getAttribute('data-tab');
+          renderTabs();
+        });
+
+        (function attachTabSwipe() {
+          var startX = 0;
+          var startY = 0;
+          var tracking = false;
+
+          tabContentEl.addEventListener('touchstart', function (event) {
+            if (!event.touches || event.touches.length !== 1) {
+              return;
+            }
+            tracking = true;
+            startX = event.touches[0].clientX;
+            startY = event.touches[0].clientY;
+          }, { passive: true });
+
+          tabContentEl.addEventListener('touchend', function (event) {
+            if (!tracking || !event.changedTouches || event.changedTouches.length !== 1) {
+              tracking = false;
+              return;
+            }
+
+            var endX = event.changedTouches[0].clientX;
+            var endY = event.changedTouches[0].clientY;
+            var deltaX = endX - startX;
+            var deltaY = endY - startY;
+            tracking = false;
+
+            if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+              return;
+            }
+
+            if (deltaX < 0) {
+              goToAdjacentTab(1);
+            } else {
+              goToAdjacentTab(-1);
+            }
+          }, { passive: true });
+        })();
+
+        headerActionsEl.addEventListener('click', function (event) {
+          var button = event.target.closest('[data-header-action]');
+          if (!button) {
+            return;
+          }
+          var action = button.getAttribute('data-header-action');
+          if (action === 'refresh') {
+            loadDetail(true);
+          }
+        });
+
+        pageThumbsEl.addEventListener('click', function (event) {
+          var button = event.target.closest('[data-page-index]');
+          if (!button || !state.detail) {
+            return;
+          }
+          state.activePageIndex = Number(button.getAttribute('data-page-index') || 0);
+          renderNotePane();
+        });
+
+        prevPageButtonEl.addEventListener('click', function () {
+          if (!state.detail) {
+            return;
+          }
+          state.activePageIndex = Math.max(0, state.activePageIndex - 1);
+          renderNotePane();
+        });
+
+        nextPageButtonEl.addEventListener('click', function () {
+          if (!state.detail) {
+            return;
+          }
+          var pages = state.detail.sections.pages || [];
+          state.activePageIndex = Math.min(pages.length - 1, state.activePageIndex + 1);
+          renderNotePane();
+        });
+
+        markersEl.addEventListener('click', function (event) {
+          var marker = event.target.closest('[data-marker-ms]');
+          if (!marker) {
+            return;
+          }
+          var ms = Number(marker.getAttribute('data-marker-ms') || 0);
+          ensureAudioAtGlobalMs(ms, !audioPlayerEl.paused && !audioPlayerEl.ended);
+        });
+
+        playButtonEl.addEventListener('click', function () {
+          if (state.audioStatus === 'loading' || state.audioStatus === 'buffering') {
+            return;
+          }
+          if (!audioPlayerEl.getAttribute('src')) {
+            ensureAudioAtGlobalMs(state.currentGlobalMs || 0, true);
+            return;
+          }
+          if (audioPlayerEl.paused) {
+            state.resumeAfterLoad = true;
+            state.audioStatus = 'playing';
+            audioPlayerEl.play().catch(function () {});
+          } else {
+            state.resumeAfterLoad = false;
+            state.audioStatus = 'paused';
+            audioPlayerEl.pause();
+          }
+          syncAudioUI();
+        });
+
+        function markScrubIntent() {
+          state.wasPlayingBeforeScrub =
+            !!audioPlayerEl.getAttribute('src') &&
+            !audioPlayerEl.paused &&
+            !audioPlayerEl.ended;
+        }
+
+        seekInputEl.addEventListener('pointerdown', markScrubIntent);
+        seekInputEl.addEventListener('touchstart', markScrubIntent, { passive: true });
+        seekInputEl.addEventListener('mousedown', markScrubIntent);
+
+        seekInputEl.addEventListener('input', function () {
+          var targetMs = Number(seekInputEl.value || 0);
+          state.isScrubbing = true;
+          state.currentGlobalMs = targetMs;
+          syncAudioUI();
+        });
+
+        seekInputEl.addEventListener('change', function () {
+          var targetMs = Number(seekInputEl.value || 0);
+          state.isScrubbing = false;
+          state.audioStatus = 'seeking';
+          ensureAudioAtGlobalMs(targetMs, state.wasPlayingBeforeScrub);
+          state.wasPlayingBeforeScrub = false;
+        });
+
+        speedButtonEl.addEventListener('click', function () {
+          state.speedIndex = (state.speedIndex + 1) % speeds.length;
+          audioPlayerEl.playbackRate = speeds[state.speedIndex];
+          speedButtonEl.textContent = String(speeds[state.speedIndex]) + 'x';
+        });
+
+        audioPlayerEl.addEventListener('timeupdate', function () {
+          if (state.audioStatus !== 'buffering') {
+            state.audioStatus = audioPlayerEl.paused ? 'paused' : 'playing';
+          }
+          syncAudioUI();
+        });
+        audioPlayerEl.addEventListener('loadedmetadata', function () {
+          applyPendingSeek();
+          if (!state.resumeAfterLoad) {
+            state.audioStatus = audioPlayerEl.paused ? 'paused' : 'playing';
+          }
+          state.isScrubbing = false;
+          resumePlaybackIfNeeded();
+          syncAudioUI();
+        });
+        audioPlayerEl.addEventListener('play', function () {
+          state.audioStatus = 'playing';
+          syncAudioUI();
+        });
+        audioPlayerEl.addEventListener('pause', function () {
+          if (state.resumeAfterLoad || state.audioStatus === 'loading' || state.audioStatus === 'seeking') {
+            return;
+          }
+          if (state.audioStatus !== 'ended') {
+            state.audioStatus = 'paused';
+          }
+          syncAudioUI();
+        });
+        audioPlayerEl.addEventListener('waiting', function () {
+          state.audioStatus = 'buffering';
+          syncAudioUI();
+        });
+        audioPlayerEl.addEventListener('seeking', function () {
+          state.audioStatus = 'seeking';
+          syncAudioUI();
+        });
+        audioPlayerEl.addEventListener('seeked', function () {
+          state.audioStatus = audioPlayerEl.paused ? 'paused' : 'playing';
+          state.isScrubbing = false;
+          syncAudioUI();
+        });
+        audioPlayerEl.addEventListener('canplay', function () {
+          if (state.audioStatus === 'loading' || state.audioStatus === 'buffering' || state.audioStatus === 'seeking') {
+            state.audioStatus = audioPlayerEl.paused ? 'paused' : 'playing';
+            syncAudioUI();
+          }
+          resumePlaybackIfNeeded();
+        });
+        audioPlayerEl.addEventListener('ended', function () {
+          var segments = getAudioSegments();
+          if (state.activeAudioIndex < segments.length - 1) {
+            var nextSegment = segments[state.activeAudioIndex + 1];
+            ensureAudioAtGlobalMs(nextSegment.startMs, true);
+            return;
+          }
+          state.audioStatus = 'ended';
+          state.currentGlobalMs = Number(seekInputEl.max || 0);
+          syncAudioUI();
+        });
+        audioPlayerEl.addEventListener('error', function () {
+          state.audioError = '音频暂不可用，不影响文本内容阅读。';
+          state.audioStatus = 'error';
+          audioPlayerEl.pause();
+          syncAudioUI();
+        });
+
+        loadDetail(false);
+      })();
+    </script>
+  </body>
+</html>

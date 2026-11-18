@@ -1,0 +1,47 @@
+{
+  "bundleId": "http_note_detail",
+  "version": 2,
+  "date": "202608311733",
+  "entry": {
+    "detail": "h5/ainote-share-mobile/mobile.html"
+  },
+  "detail": {
+    "fullRoute": "/h5/ainote-share-mobile",
+    "contentOnly": {
+      "version": 1,
+      "route": "/h5/ainote-share-content-mobile",
+      "tabs": [
+        "originalText",
+        "aiNote",
+        "summary",
+        "insight",
+        "mindMap"
+      ],
+      "bridgeVersion": 1
+    }
+  },
+  "resourceVersion": "1.0.0",
+  "build": 3,
+  "platformAppVersions": {
+    "android": {
+      "minAppVersion": "0.0.0",
+      "maxAppVersion": "999.999.999"
+    },
+    "ios": {
+      "minAppVersion": "0.0.0",
+      "maxAppVersion": "999.999.999"
+    },
+    "macos": {
+      "minAppVersion": "0.0.0",
+      "maxAppVersion": "999.999.999"
+    },
+    "windows": {
+      "minAppVersion": "0.0.0",
+      "maxAppVersion": "999.999.999"
+    },
+    "web": {
+      "minAppVersion": "0.0.0",
+      "maxAppVersion": "999.999.999"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+<svg width="690" height="304" viewBox="0 0 690 304" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="690" height="304" rx="16" fill="url(#paint0_linear_813_17694)"/>
+<mask id="mask0_813_17694" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="690" height="304">
+<path d="M0 16C0 7.16344 7.16344 0 16 0H674C682.837 0 690 7.16344 690 16V288C690 296.837 682.837 304 674 304H16C7.16345 304 0 296.837 0 288V16Z" fill="url(#paint1_linear_813_17694)"/>
+</mask>
+<g mask="url(#mask0_813_17694)">
+<foreignObject x="-24" y="200" width="738" height="128"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(12px);clip-path:url(#bgblur_0_813_17694_clip_path);height:100%;width:100%"></div></foreignObject><path data-figma-bg-blur-radius="24" d="M0 224H690V304H0V224Z" fill="#ADC6F8" fill-opacity="0.3"/>
+</g>
+<defs>
+<clipPath id="bgblur_0_813_17694_clip_path" transform="translate(24 -200)"><path d="M0 224H690V304H0V224Z"/>
+</clipPath><linearGradient id="paint0_linear_813_17694" x1="189.5" y1="13.1273" x2="704.637" y2="96.8949" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E2EEFF"/>
+<stop offset="1" stop-color="#C6DFFF"/>
+</linearGradient>
+<linearGradient id="paint1_linear_813_17694" x1="32.5" y1="-2.62448e-06" x2="684.411" y2="100.666" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FEE4B4"/>
+<stop offset="0.519231" stop-color="#FDCD79"/>
+<stop offset="1" stop-color="#F8D48C"/>
+</linearGradient>
+</defs>
+</svg>

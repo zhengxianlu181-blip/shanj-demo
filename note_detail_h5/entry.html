@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh">
+<head><meta charset="utf-8"><title>笔记详情</title></head>
+<body>
+<script>
+(async function () {
+  const registration = await navigator.serviceWorker.register('./worker.js', {
+    scope: './'
+  });
+  await navigator.serviceWorker.ready;
+  if (!navigator.serviceWorker.controller) {
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('H5 worker unavailable')), 10000);
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        clearTimeout(timeout);
+        resolve();
+      }, { once: true });
+    });
+  }
+  const assetRoot = '/assets/packages/ai_note_feature_note/assets/webview/h5/ainote-share-mobile';
+  const response = await fetch(assetRoot + '/mobile.html');
+  if (!response.ok) throw new Error('H5 bundle unavailable');
+  const uid = new URL(location.href).searchParams.get('uid') || '';
+  const bootstrap = `<script>
+    function isMarkmapUrl(value) {
+      try {
+        return new URL(value, location.href).pathname === '/markmap/markmap.html';
+      } catch (_) {
+        return false;
+      }
+    }
+    const iframeSrc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'src');
+    Object.defineProperty(HTMLIFrameElement.prototype, 'src', {
+      ...iframeSrc,
+      set(value) {
+        if (isMarkmapUrl(value)) this.credentialless = true;
+        iframeSrc.set.call(this, value);
+      }
+    });
+    const setIframeAttribute = HTMLIFrameElement.prototype.setAttribute;
+    HTMLIFrameElement.prototype.setAttribute = function (name, value) {
+      if (name.toLowerCase() === 'src' && isMarkmapUrl(value)) this.credentialless = true;
+      return setIframeAttribute.call(this, name, value);
+    };
+    window.__HTTP_NOTE_DETAIL_HOST__ = {
+      appVersion: '0.0.0', platform: 'web', resourceVersion: '3',
+      baseUrl: location.origin, debug: false
+    };
+    window.__LOCAL_BASE_URL__ = location.origin;
+    const desktopEditStyle = document.createElement('style');
+    desktopEditStyle.textContent = '.floating-edit-btn, .edit-float-btn { display: none !important; }';
+    document.head.appendChild(desktopEditStyle);
+    window.__LOCAL_NOTE_DETAIL_BOOT__ = {
+      route: location.hash.slice(1), noteUid: ${JSON.stringify(uid)}
+    };
+    window.__SELF_SPEAKER_NAME__ = '';
+    document.cookie = 'AITABLET-TOKEN=local-preview; path=/note_detail_h5/';
+    document.cookie = 'AIMT-TOKEN=local-preview; path=/note_detail_h5/';
+    sessionStorage.setItem('AITABLET-TOKEN-APP', 'local-preview');
+    sessionStorage.setItem('noteAccessToken', 'local-preview');
+    sessionStorage.setItem('noteAccessTokenExpire', String(Date.now() + 86400000));
+    const pendingRequests = new Map();
+    window.NativeBridge = {
+      postMessage(message) {
+        parent.postMessage({ source: 'ai-note-detail-h5', kind: 'bridge', message }, location.origin);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', event => {
+      const data = event.data;
+      if (!data || data.source !== 'ai-note-detail-worker') return;
+      pendingRequests.set(data.id, event.ports[0]);
+      parent.postMessage({ ...data, source: 'ai-note-detail-h5', kind: 'request' }, location.origin);
+    });
+    window.addEventListener('message', async event => {
+      if (event.origin !== location.origin || event.source !== parent) return;
+      const data = event.data;
+      if (!data || data.source !== 'ai-note-detail-app') return;
+      if (data.kind === 'response') {
+        const port = pendingRequests.get(data.id);
+        pendingRequests.delete(data.id);
+        if (port) port.postMessage(data);
+      } else if (data.kind === 'bridge-callback') {
+        window._handleNativeBridgeCallback?.(
+          data.callbackId, data.success, data.response, data.error
+        );
+      } else if (data.kind === 'command') {
+        try {
+          let result;
+          if (data.type === 'script') {
+            result = await (0, eval)(data.script);
+          } else if (typeof window.handleNativeMessage === 'function') {
+            result = await window.handleNativeMessage({ type: data.type, data: data.data });
+          }
+          if (data.type !== 'script' && result == null && typeof window.onCall === 'function') {
+            window.onCall(JSON.stringify({ event: data.type, data: data.data }));
+            result = true;
+          }
+          parent.postMessage({ source: 'ai-note-detail-h5', kind: 'command-result',
+            id: data.id, success: true, response: result ?? null }, location.origin);
+        } catch (error) {
+          parent.postMessage({ source: 'ai-note-detail-h5', kind: 'command-result',
+            id: data.id, success: false, error: String(error) }, location.origin);
+        }
+      }
+    });
+    window.addEventListener('load', () => {
+      parent.postMessage({ source: 'ai-note-detail-h5', kind: 'page-loaded' }, location.origin);
+    });
+  <\/script>
+  <script src="/assets/packages/ai_note_platform_local_h5_kit/assets/js/native_bridge.js"><\/script>
+  <script src="/assets/packages/ai_note_platform_local_h5_kit/assets/js/local_h5_runtime.js"><\/script>`;
+  const html = (await response.text()).replace(/<head>/i, '<head>' + bootstrap);
+  document.open();
+  document.write(html);
+  document.close();
+})().catch(error => {
+  document.body.textContent = '笔记内容加载失败';
+  console.error(error);
+});
+</script>
+</body>
+</html>

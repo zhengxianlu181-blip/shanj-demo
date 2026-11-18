@@ -1,0 +1,21 @@
+<svg width="28" height="38" viewBox="0 0 28 38" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M3 4C3 3.44772 3.44772 3 4 3H24C24.5523 3 25 3.44772 25 4V9H3V4Z" fill="#22C55E"/>
+  <mask id="stroke0_10192_115859" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="38" fill="black">
+    <rect fill="white" width="28" height="38"/>
+    <path d="M3 4C3 3.44772 3.44772 3 4 3H24C24.5523 3 25 3.44772 25 4V32C25 33.6569 23.6569 35 22 35H6C4.34315 35 3 33.6569 3 32V4Z"/>
+  </mask>
+  <path d="M6 35H22C23.6569 35 25 33.6569 25 32V4C25 3.44772 24.5523 3 24 3H4C3.44772 3 3 3.44772 3 4V32C3 33.6569 4.34315 35 6 35Z" stroke-width="6" stroke="#5D636E" mask="url(#stroke0_10192_115859)"/>
+  <path d="M2 10C2 9.44772 2.44772 9 3 9H26C26.5523 9 27 9.44772 27 10V11C27 11.5523 26.5523 12 26 12H3C2.44772 12 2 11.5523 2 11V10Z" fill="#5D636E"/>
+  <rect x="20" y="4" width="4" height="4" rx="2" fill="#5D636E"/>
+  <g transform="translate(-10 -2)">
+    <use xlink:href="#charging_lightning" fill="black"/>
+    <mask id="charging_lightning_outline" maskUnits="userSpaceOnUse" x="20.7676" y="3.05835" width="6" height="9" fill="black">
+      <rect fill="white" x="20.7676" y="3.05835" width="6" height="9"/>
+      <use xlink:href="#charging_lightning"/>
+    </mask>
+    <path d="M24.4493 4.60497L21.9264 8.16253C21.8598 8.25646 21.9269 8.38643 22.0421 8.38643H22.9838C23.074 8.38643 23.1412 8.46939 23.1226 8.55758L22.5435 11.3C22.5119 11.4493 22.7061 11.5362 22.7965 11.4133L25.3112 7.99401C25.3801 7.90034 25.3132 7.76813 25.197 7.76813H24.2596C24.17 7.76813 24.1028 7.68601 24.1206 7.59815L24.7041 4.71516C24.7345 4.56492 24.538 4.47994 24.4493 4.60497Z" stroke-linecap="round" stroke="white" mask="url(#charging_lightning_outline)"/>
+  </g>
+  <defs>
+    <path id="charging_lightning" d="M21.9264 8.16253L24.4493 4.60497C24.538 4.47994 24.7345 4.56492 24.7041 4.71516L24.1206 7.59815C24.1028 7.68601 24.17 7.76813 24.2596 7.76813H25.197C25.3132 7.76813 25.3801 7.90034 25.3112 7.99401L22.7965 11.4133C22.7061 11.5362 22.5119 11.4493 22.5435 11.3L23.1226 8.55758C23.1412 8.46939 23.074 8.38643 22.9838 8.38643H22.0421C21.9269 8.38643 21.8598 8.25646 21.9264 8.16253Z"/>
+  </defs>
+</svg>

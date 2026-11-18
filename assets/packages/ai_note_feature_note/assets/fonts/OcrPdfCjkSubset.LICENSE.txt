@@ -1,0 +1,14 @@
+OcrPdfCjkSubset.ttf is a subset generated from Google Noto Sans SC Regular.
+
+Noto Sans CJK / Noto Sans SC is distributed under the SIL Open Font License, Version 1.1.
+
+This subset is bundled only for OCR PDF export rendering.
+
+Key license terms summary:
+- The font may be used, embedded, modified, and redistributed, including in commercial apps.
+- The font file may not be sold by itself.
+- Modified versions remain under the SIL Open Font License.
+- Reserved Font Names must not be used for modified versions without permission.
+
+Full license text:
+https://openfontlicense.org/open-font-license-official-text/

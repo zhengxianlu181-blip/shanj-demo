@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Markmap</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    #mindmap,#mindmap2 {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #body{
+      overflow: hidden;
+    }
+    #export {
+      display: block;
+      width: 1280px;
+      height: 100%;
+      margin-top: 200vh;
+    }
+    html,
+    body {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    svg,
+    text,
+    tspan {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+  </style>
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/katex.min.css">
+</head>
+
+<body id="body">
+  <svg id="mindmap"></svg>
+  <!-- 导出用 -->
+  <div id="export">
+    <svg id="mindmap2"></svg>
+  </div>
+  <script src="./js/markmap.js"></script>
+  <!-- 引入 html2canvas 库 -->
+  <script src="./js/html2canvas.min.js"></script>
+  <script src="./js/export.js"></script>
+</body>
+
+</html>
