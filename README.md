@@ -9,3 +9,8 @@
 新的可操作 Windows 功能演示：[`windows-demo.html`](./windows-demo.html)。
 
 页面支持浏览器麦克风录音、暂停/继续、录音试听、实时语音识别、转写复制，以及 MP3/WAV/M4A/MP4/MOV 文件导入和预览。直接打开 HTML 即可，不需要 PowerShell。
+
+## PC 端录音与实时转录交互方案
+
+- [打开可分享的交互原型](./recording-prototype.html)
+- [查看交互设计说明](./recording-design.md)
