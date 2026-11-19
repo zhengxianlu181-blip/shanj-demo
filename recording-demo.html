@@ -123,6 +123,8 @@
       playing: false, playPosition: 0, playTimer: null, floatPinned: false,
       caption: {font: 16, color: '#ffffff', bg: '#0f1d31', opacity: 92, position: 'center', speaker: true},
     };
+    let captionWindow = null;
+    let captionPoll = null;
 
     function toast(message, type = 'normal') {
       const node = $('#toast');
@@ -376,6 +378,7 @@
       segments.forEach((segment) => { const p = document.createElement('p'); p.className = 'float-line'; p.innerHTML = `<em>${state.caption.speaker ? `${segment.speaker} · ${stamp(segment.seconds)}` : ''}</em>${segment.text}`; lines.appendChild(p); });
       const note = document.createElement('p'); note.className = 'float-muted'; note.textContent = state.paused ? (state.pauseReason === 'network' ? '网络断开，字幕已暂停' : '录音已暂停，字幕等待继续') : '字幕窗口关闭后，录音和转录仍会继续'; lines.appendChild(note);
       applyCaption();
+      if (captionWindow && !captionWindow.closed) captionWindow.postMessage({type: 'caption-update', segments, paused: state.paused, reason: state.pauseReason, config: state.caption}, '*');
     }
     function applyCaption() {
       const f = state.caption; const alpha = Math.round(f.opacity * 2.55).toString(16).padStart(2, '0'); const floating = $('#floating');
@@ -384,8 +387,14 @@
       selectAll('.float-line em', floating).forEach((line) => { line.style.display = f.speaker ? '' : 'none'; });
       $('#fontOut').textContent = `${f.font}px`; $('#opacityOut').textContent = `${f.opacity}%`;
       $('#captionPreview').style.background = f.bg; $('#captionPreview').style.opacity = f.opacity / 100; $('#captionPreview span').style.color = f.color; $('#captionPreview span').style.fontSize = `${f.font}px`;
+      if (captionWindow && !captionWindow.closed) captionWindow.postMessage({type: 'caption-config', config: f}, '*');
     }
-    function openFloating() { $('#floating').classList.add('open'); $('#floating').classList.remove('min'); $('#reopenFloat').classList.remove('show'); state.floatOpen = true; renderFloat(); }
+    function openFloating() {
+      if (captionWindow && !captionWindow.closed) { captionWindow.focus(); renderFloat(); return; }
+      captionWindow = window.open('', 'shanjCaptionWindow', 'width=520,height=300,left=90,top=110,resizable=yes');
+      if (!captionWindow) { $('#floating').classList.add('open'); $('#floating').classList.remove('min'); $('#reopenFloat').classList.remove('show'); renderFloat(); toast('浏览器阻止了独立窗口，已使用页面内字幕浮窗', 'error'); return; }
+      captionWindow.document.write(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>实时字幕 · 思必驰闪记</title><style>*{box-sizing:border-box}html,body{height:100%;margin:0;background:#0f1d31;color:#fff;font-family:"Microsoft YaHei",sans-serif;overflow:hidden}.head{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:#132641;border-bottom:1px solid rgba(255,255,255,.18);cursor:move}.head strong{font-size:12px;color:#dbeaff}.tools{display:flex;gap:4px}.tools button{width:25px;height:25px;border:0;border-radius:5px;background:transparent;color:#c4dcff;cursor:pointer}.tools button:hover{background:rgba(255,255,255,.14)}.body{height:calc(100% - 40px);overflow:auto;padding:14px;display:flex;flex-direction:column;justify-content:center}.line{margin:0 0 9px;line-height:1.45}.speaker{font-size:10px;color:#8fbaff;margin-right:7px}.muted{font-size:11px;color:#91a4be;margin-top:4px}.settings{position:absolute;right:9px;top:46px;width:220px;padding:12px;background:#fff;color:#223b5c;border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;font-size:11px}.settings.open{display:block}.settings label{display:flex;justify-content:space-between;align-items:center;margin:8px 0}.settings button{width:100%;height:27px;margin-top:6px;border:0;border-radius:5px;background:#2674e8;color:#fff}</style></head><body><div class="head"><strong>实时字幕 · 思必驰闪记</strong><div class="tools"><button id="pin" title="置顶">⌃</button><button id="min" title="最小化">—</button><button id="set" title="设置">⚙</button><button id="close" title="关闭">×</button></div></div><div class="body" id="body"></div><div class="settings" id="settings"><label>字体大小 <input id="font" type="range" min="12" max="26" value="16"></label><label>背景透明度 <input id="opacity" type="range" min="40" max="100" value="92"></label><button id="apply">应用设置</button></div><script>let cfg={font:16,color:'#fff',bg:'#0f1d31',opacity:92,speaker:true,position:'center'},segments=[];const q=s=>document.querySelector(s);function draw(){const b=q('#body');b.style.justifyContent=cfg.position==='top'?'flex-start':cfg.position==='bottom'?'flex-end':'center';b.style.fontSize=cfg.font+'px';b.style.color=cfg.color;b.style.background=cfg.bg;b.innerHTML=segments.slice(-5).map(x=>'<p class="line"><span class="speaker" style="display:'+(cfg.speaker?'':'none')+'">'+x.speaker+' · 00:'+String(x.seconds).padStart(2,'0')+'</span>'+x.text+'</p>').join('')+(cfg.paused?'<div class="muted">'+(cfg.reason==='network'?'网络断开，字幕已暂停':'录音已暂停，点击继续后恢复字幕')+'</div>':'')}q('#min').onclick=()=>{q('#body').style.display=q('#body').style.display==='none'?'flex':'none'};q('#close').onclick=()=>window.close();q('#pin').onclick=e=>{e.currentTarget.textContent=e.currentTarget.textContent==='⌃'?'⌄':'⌃'};q('#set').onclick=()=>q('#settings').classList.toggle('open');q('#font').oninput=e=>{cfg.font=+e.target.value;draw()};q('#opacity').oninput=e=>{cfg.opacity=+e.target.value;draw()};q('#apply').onclick=()=>q('#settings').classList.remove('open');addEventListener('message',e=>{if(e.data.type==='caption-update'){segments=e.data.segments||[];cfg={...cfg,...e.data.config,paused:e.data.paused,reason:e.data.reason};draw()}if(e.data.type==='caption-config'){cfg={...cfg,...e.data.config};draw()}});draw();<\\/script></body></html>`); captionWindow.document.close(); captionWindow.focus(); $('#reopenFloat').classList.remove('show'); renderFloat(); clearInterval(captionPoll); captionPoll = setInterval(() => { if (!captionWindow || captionWindow.closed) { clearInterval(captionPoll); captionPoll = null; $('#reopenFloat').classList.add('show'); } }, 700); toast('已打开独立悬浮字幕窗口', 'success');
+    }
     function closeFloating() { $('#floating').classList.remove('open'); $('#reopenFloat').classList.add('show'); state.floatOpen = false; }
 
     $('#startRecord').onclick = startRecord; $('#goImport').onclick = () => navigate('import');
